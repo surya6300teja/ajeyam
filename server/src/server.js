@@ -152,7 +152,7 @@ app.get('*', (req, res, next) => {
     // If neither exists, show a friendly error
     res.status(404).send(`
       <html>
-        <head><title>App Not Built</title></head>
+        <head><title>App Notb Built</title></head>
         <body>
           <h1>React App Not Built</h1>
           <p>The React application hasn't been built yet. Please run:</p>
