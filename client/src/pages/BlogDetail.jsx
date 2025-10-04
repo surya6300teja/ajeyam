@@ -2,7 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Comments from '../components/blog/Comments';
 import api from '../services/api';
-import { Helmet } from 'react-helmet-async';
+// import { Helmet } from 'react-helmet-async';
 import '../styles/blog.css';
 import { useAuth } from '../context/AuthContext';
 
@@ -422,7 +422,7 @@ const BlogDetail = () => {
   return (
     <div className="min-h-screen bg-[#FBF7F4]">
       {/* Open Graph Meta Tags */}
-      <Helmet prioritizeSeoTags>
+      {/* <Helmet prioritizeSeoTags> */}
         <title>{sanitizedBlog.title} | Ajeyam.in</title>
         <meta name="description" content={sanitizedBlog.summary || stripHtml(sanitizedBlog.content).slice(0, 160)} />
         
@@ -456,7 +456,7 @@ const BlogDetail = () => {
 
         {/* Additional Tags for SEO and Social Sharing */}
         <link rel="canonical" href={window.location.href} />
-      </Helmet>
+      {/* </Helmet> */}
       
       {/* Add custom CSS for blog content */}
       <style jsx="true">{`
