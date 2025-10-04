@@ -1,0 +1,211 @@
+
+@keyframes timelineGlow {
+  0% { box-shadow: 0 0 0 8px rgba(217,119,6,0.1); }
+  50% { box-shadow: 0 0 0 12px rgba(217,119,6,0.05); }
+  100% { box-shadow: 0 0 0 8px rgba(217,119,6,0.1); }
+}
+
+.timeline-node {
+  animation: timelineGlow 3s infinite;
+}
+.image-container {
+  position: relative;
+  display: inline-block;
+  margin: 1em 0;
+}
+
+.image-container img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.resize-handles {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid #0066cc;
+}
+
+.image-container:hover .resize-handles {
+  display: block;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: white;
+  border: 2px solid #0066cc;
+}
+
+.resize-handle.top-left { top: -5px; left: -5px; cursor: nw-resize; }
+.resize-handle.top-right { top: -5px; right: -5px; cursor: ne-resize; }
+.resize-handle.bottom-left { bottom: -5px; left: -5px; cursor: sw-resize; }
+.resize-handle.bottom-right { bottom: -5px; right: -5px; cursor: se-resize; }
+
+.align-left { text-align: left; }
+.align-center { text-align: center; }
+.align-right { text-align: right; }
+
+/* ajeyam-new/src/components/blog/BlogEditor.css */
+.ProseMirror {
+  min-height: 200px;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  outline: none;
+  position: relative;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0;
+}
+
+.ProseMirror img.resize-image {
+  display: inline-block;
+  position: relative;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 1rem 0;
+}
+
+.editor-image {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  margin: 2rem 0;
+  transition: all 0.2s ease-in-out !important;
+  will-change: width;
+}
+
+.editor-image img {
+  max-width: 100%;
+  height: auto;
+  cursor: pointer;
+  display: block;
+  margin: 0 auto;
+  border-radius: 0.75rem;
+  width: 100% !important; /* Always fill parent */
+  transition: inherit;
+}
+
+.editor-image[data-alignment="center"] {
+  display: block;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.editor-image[data-alignment="right"] {
+  display: block;
+  text-align: right;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.editor-image[data-alignment="left"] {
+  display: block;
+  text-align: left;
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.editor-image[data-width="100%"] {
+  width: 100% !important;
+}
+
+.editor-image[data-width="75%"] {
+  width: 75% !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.editor-image[data-width="50%"] {
+  width: 50% !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.editor-image[data-width="33%"] {
+  width: 33% !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Image toolbar styles */
+.ProseMirror .is-image-selected {
+  outline: 2px solid #3b82f6;
+  border-radius: 4px;
+}
+
+.image-toolbar {
+  display: flex;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 100;
+  padding: 4px;
+}
+
+.image-toolbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin: 0 2px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #4b5563;
+}
+
+.image-toolbar button:hover {
+  background-color: #f3f4f6;
+}
+
+.image-toolbar button.active {
+  background-color: #e5e7eb;
+  color: #1f2937;
+}
+
+.image-toolbar .divider {
+  width: 1px;
+  height: 24px;
+  background-color: #e5e7eb;
+  margin: 0 4px;
+}
+
+
+/* Indicate selected state more clearly */
+.editor-image.selected {
+  outline: 2px dashed #B45309;
+  border-radius: 0.75rem;
+  z-index: 5;
+}
+
+/* Clear floats after images */
+.ProseMirror p:after {
+  content: "";
+  display: table;
+  clear: both;
+}

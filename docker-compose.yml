@@ -1,0 +1,26 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: mern_app_backend
+    restart: always
+    ports:
+      - "3001:3001"
+    # Tell Docker Compose to load variables from a file named .env
+    env_file:
+      - ./.env
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://your-ec2-public-ip:5000/api
+    container_name: mern_app_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
