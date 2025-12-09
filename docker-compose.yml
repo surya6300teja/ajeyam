@@ -47,7 +47,7 @@ services:
       args:
         # FIXED: Changed port 5000 -> 3001 to match the backend above
         # REPLACE 13.62.245.17 with your actual Elastic IP
-        VITE_API_URL: http://13.62.245.17:3001
+        VITE_API_URL: http://13.62.245.17:3001/api/v1
     container_name: mern_app_frontend
     restart: always
     ports:
