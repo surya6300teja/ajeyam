@@ -1,23 +1,50 @@
-# docker-compose.yml
+#docker-compose.yml
+
+# version: '3.8'
+
+# services:
+#   backend:
+#     build: ./server
+#     container_name: mern_app_backend
+#     restart: always
+#     ports:
+#       - "3001:3001"
+#     # Tell Docker Compose to load variables from a file named .env
+#     env_file:
+#       - ./.env
+
+#   frontend:
+#     build:
+#       context: ./frontend
+#       args:
+#         VITE_API_URL: http://your-ec2-public-ip:5000/api
+#     container_name: mern_app_frontend
+#     restart: always
+#     ports:
+#       - "80:80"
+#     depends_on:
+#       - backend
+
 
 version: '3.8'
 
 services:
   backend:
-    build: ./backend
+    build: ./server       # This is correct (matches your folder)
     container_name: mern_app_backend
     restart: always
     ports:
-      - "3001:3001"
-    # Tell Docker Compose to load variables from a file named .env
+      - "3001:3001"       # <--- Backend is listening here
     env_file:
       - ./.env
 
   frontend:
     build:
-      context: ./frontend
+      context: ./client   # <--- FIXED: Changed from './frontend' to './client'
       args:
-        VITE_API_URL: http://your-ec2-public-ip:5000/api
+        # FIXED: Changed port 5000 -> 3001 to match the backend above
+        # REPLACE 13.62.245.17 with your actual Elastic IP
+        VITE_API_URL: http://13.62.245.17:3001
     container_name: mern_app_frontend
     restart: always
     ports:
