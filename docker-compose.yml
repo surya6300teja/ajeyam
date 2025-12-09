@@ -37,6 +37,9 @@ services:
       - "3001:3001"       # <--- Backend is listening here
     env_file:
       - ./.env
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
   frontend:
     build:
