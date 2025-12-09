@@ -143,7 +143,7 @@ const Home = () => {
                 className="group relative rounded-full px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg overflow-hidden"
               >
                 <span className="relative z-10 text-amber-900 font-medium group-hover:text-white transition-colors duration-100">
-                  Begin Your Journey
+                  Begin Your Journey:
                 </span>
                 <div className="absolute inset-0 bg-amber-900 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
               </Link>
