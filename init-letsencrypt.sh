@@ -51,11 +51,8 @@ echo
 
 
 echo "### Requesting Let's Encrypt certificate for $domains ..."
-#Join $domains to -d args
-domain_args=""
-for domain in "${domains[@]}"; do
-  domain_args="$domain_args -d $domain -d www.$domain"
-done
+# Explicitly listing domains to avoid auto-www prefixing on subdomains like api
+domain_args="-d ajeyam.in -d www.ajeyam.in -d api.ajeyam.in"
 
 # Select appropriate email arg
 case "$email" in
