@@ -8,8 +8,7 @@ fi
 domains=(ajeyam.in api.ajeyam.in)
 rsa_key_size=4096
 data_path="./certbot"
-email="surya6300teja@gmail.com" # Adding user's email based on context if known, or prompt. Using safe default or asking user is better. I'll use a placeholder or the detected email if possible.
-email="your-email@example.com" # Placeholder
+email="surya6300teja@gmail.com" # Using your email from context
 staging=0 # Set to 1 if you're testing your setup to avoid hitting request limits
 
 if [ -d "$data_path" ]; then
@@ -32,10 +31,10 @@ echo "### Creating dummy certificate for $domains ..."
 path="/etc/letsencrypt/live/$domains"
 mkdir -p "$data_path/conf/live/$domains"
 docker-compose run --rm --entrypoint "\
-  openssl req -x509 -nodes -newkey rsa:$rsa_key_size -days 1\
-    -keyout '$path/privkey.pem' \
-    -out '$path/fullchain.pem' \
-    -subj '/CN=localhost'" certbot
+  sh -c 'mkdir -p $path && openssl req -x509 -nodes -newkey rsa:$rsa_key_size -days 1\
+    -keyout \"$path/privkey.pem\" \
+    -out \"$path/fullchain.pem\" \
+    -subj \"/CN=localhost\"'" certbot
 echo
 
 
