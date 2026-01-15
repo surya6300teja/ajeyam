@@ -1,40 +1,13 @@
-#docker-compose.yml
-
-# version: '3.8'
-
-# services:
-#   backend:
-#     build: ./server
-#     container_name: mern_app_backend
-#     restart: always
-#     ports:
-#       - "3001:3001"
-#     # Tell Docker Compose to load variables from a file named .env
-#     env_file:
-#       - ./.env
-
-#   frontend:
-#     build:
-#       context: ./frontend
-#       args:
-#         VITE_API_URL: http://your-ec2-public-ip:5000/api
-#     container_name: mern_app_frontend
-#     restart: always
-#     ports:
-#       - "80:80"
-#     depends_on:
-#       - backend
-
-
 version: '3.8'
 
 services:
   backend:
-    build: ./server       # This is correct (matches your folder)
+    build: ./server
     container_name: mern_app_backend
     restart: always
-    ports:
-      - "3001:3001"       # <--- Backend is listening here
+    # Ports removed to keep it internal to the docker network
+    # ports:
+    #   - "3001:3001"
     env_file:
       - ./.env
     dns:
@@ -43,14 +16,38 @@ services:
 
   frontend:
     build:
-      context: ./client   # <--- FIXED: Changed from './frontend' to './client'
+      context: ./client
       args:
-        # FIXED: Changed port 5000 -> 3001 to match the backend above
-        # REPLACE 13.62.245.17 with your actual Elastic IP
-        VITE_API_URL: http://13.62.245.17:3001/api/v1
+        # This will be overridden by the ARG in Dockerfile or env var if set properly
+        # but for build time it needs a value.
+        # In production, we'll ensure the build process injects the correct URL
+        VITE_API_URL: https://api.ajeyam.in/api/v1
     container_name: mern_app_frontend
+    restart: always
+    # Ports removed to keep it internal to the docker network
+    # ports:
+    #   - "80:80"
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: mern_app_nginx
     restart: always
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
     depends_on:
+      - frontend
       - backend
+
+  certbot:
+    image: certbot/certbot
+    container_name: mern_app_certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot

@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-// Import routes
+
 const authRoutes = require('./routes/authRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const userRoutes = require('./routes/userRoutes');

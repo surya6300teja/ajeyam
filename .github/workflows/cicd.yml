@@ -42,7 +42,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/mern-frontend:latest
           build-args: |
-            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            VITE_API_URL=https://api.ajeyam.in/api/v1
           cache-from: type=inline
           cache-to: type=inline
 
@@ -60,7 +60,8 @@ jobs:
           docker-compose pull
           
           echo "Stopping and removing old containers, and starting new ones..."
-          docker-compose up -d --force-recreate
+          # Using --remove-orphans to clean up old backend/frontend ports if needed
+          docker-compose up -d --remove-orphans
           
           echo "Cleaning up dangling images..."
           docker image prune -f
