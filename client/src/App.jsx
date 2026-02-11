@@ -16,6 +16,10 @@ import CreateBookReview from './pages/CreateBookReview';
 import MyBookReviews from './pages/MyBookReviews';
 import AdminBookReviews from './pages/admin/AdminBookReviews';
 import AdminCategories from './pages/admin/AdminCategories';
+import About from './pages/About';
+import TermsOfService from './pages/TermsOfService';
+import Contact from './pages/Contact';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 function App() {
   return (
@@ -30,7 +34,11 @@ function App() {
         <Route path="signup" element={<Signup />} />
         <Route path="book-reviews" element={<BookReviewsList />} />
         <Route path="book-reviews/:id" element={<BookReviewDetail />} />
-        
+        <Route path="about" element={<About />} />
+        <Route path="terms-of-service" element={<TermsOfService />} />
+        <Route path="contact" element={<Contact />} />
+        <Route path="privacy-policy" element={<PrivacyPolicy />} />
+
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="create-blog" element={<CreateBlog />} />
@@ -39,7 +47,7 @@ function App() {
           <Route path="my-book-reviews" element={<MyBookReviews />} />
           {/* Add other protected routes here */}
         </Route>
-        
+
         {/* Admin-only routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="admin" element={<AdminDashboard />} />

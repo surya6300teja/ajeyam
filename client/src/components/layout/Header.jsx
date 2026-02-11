@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Disclosure, Dialog, Transition } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -21,6 +21,16 @@ const Header = () => {
   const navigate = useNavigate();
   const { currentUser, logout, isAuthenticated, isAdmin } = useAuth();
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -53,15 +63,23 @@ const Header = () => {
                   )}
                 </Disclosure.Button>
               </div>
-              
+
               {/* Logo and Navigation */}
               <div className="flex flex-1 items-center justify-between sm:items-stretch">
                 <div className="flex flex-shrink-0 items-center ml-8 sm:ml-0">
-                  <Link to="/" className="text-2xl ml-2 font-serif font-bold text-gray-900">
-                    ajeyam.in
+                  <Link to="/" className="flex items-center group">
+                    <img
+                      src="/logo.png"
+                      alt="Ajeyam Logo"
+                      className="h-10 w-10 sm:h-12 sm:w-12 mr-3 transition-transform duration-300 ease-out group-hover:scale-110 group-hover:drop-shadow-sm will-change-transform"
+                      style={{ transform: `rotate(${scrollY * 0.15}deg)` }}
+                    />
+                    <span className="text-2xl font-serif font-bold text-gray-900 transition-colors group-hover:text-gray-700">
+                      ajeyam.in
+                    </span>
                   </Link>
                 </div>
-                
+
                 {/* Desktop Navigation */}
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                   {navigation.map((item) => (

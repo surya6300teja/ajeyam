@@ -19,7 +19,7 @@ const BlogSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide a blog summary'],
       trim: true,
-      minlength: [50, 'Summary must be at least 50 characters long'],
+      minlength: [10, 'Summary must be at least 10 characters long'],
       maxlength: [300, 'Summary cannot exceed 300 characters']
     },
     content: {
@@ -49,7 +49,7 @@ const BlogSchema = new mongoose.Schema(
     ],
     readTime: {
       type: Number, // in minutes
-      default: function() {
+      default: function () {
         // Calculate read time based on content length (average 200 words per minute)
         const wordsPerMinute = 200;
         const wordCount = this.content.split(/\s+/).length;
@@ -104,26 +104,26 @@ BlogSchema.virtual('comments', {
 });
 
 // Create slug from title before saving
-BlogSchema.pre('save', function(next) {
+BlogSchema.pre('save', function (next) {
   if (this.isModified('title')) {
     this.slug = slugify(this.title, { lower: true, strict: true }) + '-' + Date.now().toString().slice(-6);
   }
-  
+
   // Update likesCount from likes array length
   if (this.isModified('likes')) {
     this.likesCount = this.likes.length;
   }
-  
+
   // Set publishedAt date when status changes to published
   if (this.isModified('status') && this.status === 'published' && !this.publishedAt) {
     this.publishedAt = Date.now();
   }
-  
+
   next();
 });
 
 // When a blog is queried, automatically populate author and category
-BlogSchema.pre(/^find/, function(next) {
+BlogSchema.pre(/^find/, function (next) {
   this.populate({
     path: 'author',
     select: 'name avatar bio'
@@ -131,12 +131,12 @@ BlogSchema.pre(/^find/, function(next) {
     path: 'category',
     select: 'name'
   });
-  
+
   next();
 });
 
 // Static method to calculate average read time of all blogs by a specific author
-BlogSchema.statics.calcAverageReadTime = async function(authorId) {
+BlogSchema.statics.calcAverageReadTime = async function (authorId) {
   const stats = await this.aggregate([
     {
       $match: { author: authorId }
@@ -148,17 +148,17 @@ BlogSchema.statics.calcAverageReadTime = async function(authorId) {
       }
     }
   ]);
-  
+
   return stats.length > 0 ? stats[0].avgReadTime : 0;
 };
 
 // Instance method to check if a user has liked this blog
-BlogSchema.methods.isLikedByUser = function(userId) {
+BlogSchema.methods.isLikedByUser = function (userId) {
   return this.likes.some(like => like.toString() === userId.toString());
 };
 
 // Instance method to add or remove a like
-BlogSchema.methods.toggleLike = function(userId) {
+BlogSchema.methods.toggleLike = function (userId) {
   if (this.isLikedByUser(userId)) {
     // User already liked the blog, so remove the like
     this.likes = this.likes.filter(like => like.toString() !== userId.toString());
@@ -166,7 +166,7 @@ BlogSchema.methods.toggleLike = function(userId) {
     // User hasn't liked the blog, so add the like
     this.likes.push(userId);
   }
-  
+
   this.likesCount = this.likes.length;
   return this.save();
 };

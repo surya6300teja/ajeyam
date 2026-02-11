@@ -5,6 +5,8 @@ import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
+import FontFamily from '@tiptap/extension-font-family';
+import TextStyle from '@tiptap/extension-text-style';
 import './BlogEditor.css';
 import ReactDOM from 'react-dom';
 import React from 'react';
@@ -13,9 +15,8 @@ import React from 'react';
 const FloatingButton = ({ icon, title, action, isActive = null }) => (
   <button
     onClick={action}
-    className={`px-2 py-1 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-black hover:bg-gray-100 ${
-      isActive && isActive() ? 'bg-gray-200 text-black' : 'text-gray-700'
-    }`}
+    className={`px-2 py-1 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-black hover:bg-gray-100 ${isActive && isActive() ? 'bg-gray-200 text-black' : 'text-gray-700'
+      }`}
     title={title}
     type="button"
   >
@@ -114,6 +115,7 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
   const [editorLoading, setEditorLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('');
   const saveTimerRef = useRef(null);
+  const [currentFont, setCurrentFont] = useState('');
 
   // Initialize the editor with enhanced features
   const editor = useEditor({
@@ -122,6 +124,10 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
         heading: {
           levels: [1, 2, 3]
         }
+      }),
+      TextStyle,
+      FontFamily.configure({
+        types: ['textStyle'],
       }),
       Image.configure({
         inline: true,
@@ -153,43 +159,43 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
           // Create the DOM structure
           const dom = document.createElement('div');
           dom.classList.add('editor-image');
-          
+
           // Add appropriate data attributes
           if (node.attrs.alignment) {
             dom.setAttribute('data-alignment', node.attrs.alignment);
             dom.style.textAlign = node.attrs.alignment;
           }
-          
+
           if (node.attrs.width) {
             dom.setAttribute('data-width', node.attrs.width);
             dom.style.width = node.attrs.width;
           }
-          
+
           // Create the image element
           const img = document.createElement('img');
           img.src = node.attrs.src;
           img.alt = node.attrs.alt || '';
-          
+
           if (node.attrs.width && node.attrs.width !== 'auto') {
             img.style.width = '100%'; // Always 100% of parent
             dom.style.width = node.attrs.width; // Parent controls actual width
           }
-          
+
           dom.appendChild(img);
-          
+
           // Add click handler to select the image
           dom.addEventListener('click', () => {
             const { state, dispatch } = editor.view;
             const position = getPos();
-            
+
             // Select this node
             dispatch(state.tr.setSelection(
               state.tr.selection.constructor.create(state.doc, position, position + node.nodeSize)
             ));
-            
+
             // Add selected class
             dom.classList.add('selected');
-            
+
             // Call your function to show options
             window.requestAnimationFrame(() => {
               if (typeof setSelectedImage === 'function') {
@@ -198,7 +204,7 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
               }
             });
           });
-          
+
           // Listen for selection changes to update the selected class
           editor.on('selectionUpdate', ({ editor }) => {
             const isSelected = editor.isActive('image', node.attrs);
@@ -208,7 +214,7 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
               dom.classList.remove('selected');
             }
           });
-          
+
           return {
             dom,
             update: (updatedNode) => {
@@ -217,12 +223,12 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
                 dom.style.width = updatedNode.attrs.width;
                 dom.setAttribute('data-width', updatedNode.attrs.width);
               }
-              
+
               if (updatedNode.attrs.alignment !== node.attrs.alignment) {
                 dom.style.textAlign = updatedNode.attrs.alignment;
                 dom.setAttribute('data-alignment', updatedNode.attrs.alignment);
               }
-              
+
               // Return true if this is still an image node
               return updatedNode.type.name === 'image';
             },
@@ -253,26 +259,26 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
     autofocus: 'end',
     editorProps: {
       attributes: {
-        class: 'prose prose-lg max-w-none focus:outline-none min-h-[70vh] px-8 py-4 prose-p:my-6 prose-img:my-8 prose-hr:my-8 prose-blockquote:border-l-4 prose-blockquote:pl-6 prose-blockquote:italic prose-headings:font-serif prose-h2:mt-12 prose-h2:mb-6',
+        class: 'prose prose-lg max-w-none focus:outline-none min-h-[70vh] px-8 py-4 prose-p:my-4 prose-img:my-8 prose-hr:my-8 prose-blockquote:border-l-4 prose-blockquote:pl-6 prose-blockquote:italic prose-headings:font-serif prose-h2:mt-12 prose-h2:mb-6',
       },
       handleClick(view, pos, event) {
         // Check if clicked element is an image
         const { state } = view;
         const clickedNode = state.doc.nodeAt(pos);
-        
+
         if (clickedNode && clickedNode.type.name === 'image') {
           // Store reference to the clicked image node
           setSelectedImage(clickedNode);
           setShowImageOptions(true);
-          
+
           // Return true to indicate we've handled the click
           return true;
         }
-        
+
         // Click was not on an image, hide the image options
         setShowImageOptions(false);
         setSelectedImage(null);
-        
+
         // Return false to let other handlers process the event
         return false;
       },
@@ -283,8 +289,27 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
         setSelectedImage(null);
         setShowImageOptions(false);
       }
+
+      // Update font state
+      let font = editor.getAttributes('textStyle').fontFamily;
+      if (font) {
+        font = font.replace(/['"]+/g, '');
+      }
+      if (font !== currentFont) {
+        setCurrentFont(font || '');
+      }
+
       // Autosave draft on content change (debounced)
       queueDraftSave();
+    },
+    onSelectionUpdate: ({ editor }) => {
+      let font = editor.getAttributes('textStyle').fontFamily;
+      if (font) {
+        font = font.replace(/['"]+/g, '');
+      }
+      if (font !== currentFont) {
+        setCurrentFont(font || '');
+      }
     },
     onCreate: () => {
       // When the editor is ready, set loading to false and attempt to load draft content
@@ -367,33 +392,33 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    
+
     input.onchange = async () => {
       if (input.files?.length) {
         const file = input.files[0];
         const reader = new FileReader();
-        
+
         reader.onload = (e) => {
           if (editor && e.target?.result) {
             // Save the image with full base64 data to ensure accessibility from social platforms
             const imageUrl = e.target.result;
-            
+
             editor
               .chain()
               .focus()
-              .setImage({ 
+              .setImage({
                 src: imageUrl,
                 alt: file.name,
                 alignment: 'center', // Default to center alignment for better sharing
                 width: 'auto', // Default width
               })
               .run();
-            
-            console.log('Image added with URL format that should work for sharing:', 
+
+            console.log('Image added with URL format that should work for sharing:',
               imageUrl.substring(0, 30) + '...');
           }
         };
-        
+
         reader.readAsDataURL(file);
       }
     };
@@ -405,18 +430,18 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    
+
     input.onchange = async () => {
       if (input.files?.length) {
         const file = input.files[0];
         const reader = new FileReader();
-        
+
         reader.onload = (e) => {
           if (e.target?.result) {
             setFeaturedImage(e.target.result);
           }
         };
-        
+
         reader.readAsDataURL(file);
       }
     };
@@ -426,9 +451,9 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!editor) return;
-    
+
     const blogData = {
       title,
       content: editor.getHTML(),
@@ -437,7 +462,7 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
       featuredImage,
       excerpt,
     };
-    
+
     if (onSave) {
       onSave(blogData);
     }
@@ -449,7 +474,7 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
     .ProseMirror {
       font-family: ui-sans-serif, system-ui, sans-serif;
       color: #374151;
-      line-height: 1.75;
+      line-height: 1.6;
     }
     
     /* Images */
@@ -544,9 +569,8 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
     
     /* Paragraphs */
     .ProseMirror p {
-      margin: 1.5rem 0 !important;
+      margin: 1.25rem 0 !important;
       color: #4B5563 !important;
-      font-family: 'Inter', ui-sans-serif, system-ui, sans-serif !important;
     }
     
     /* Horizontal rules */
@@ -634,19 +658,19 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
       align-items: center;
     }
   `;
-  
+
   // Function to render resize options for selected image
   const renderImageOptions = () => {
     if (!selectedImage || !showImageOptions) return null;
-    
+
     // Find the DOM node for the selected image to position the options correctly
     const imageElement = document.querySelector('.editor-image.selected');
     if (!imageElement) return null;
-    
+
     return ReactDOM.createPortal(
-      <ImageOptions 
-        editor={editor} 
-        node={selectedImage} 
+      <ImageOptions
+        editor={editor}
+        node={selectedImage}
         setImageWidth={setImageWidth}
         setImageAlignment={setImageAlignment}
       />,
@@ -658,12 +682,12 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
   const updateSelectedImageStyles = (attrs) => {
     const imageElement = document.querySelector('.editor-image.selected');
     if (!imageElement) return;
-    
+
     if (attrs.width) {
       imageElement.style.width = attrs.width;
       imageElement.setAttribute('data-width', attrs.width);
     }
-    
+
     if (attrs.alignment) {
       imageElement.style.textAlign = attrs.alignment;
       imageElement.setAttribute('data-alignment', attrs.alignment);
@@ -677,12 +701,12 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
         .focus()
         .setNodeAttribute('image', 'width', width)
         .run();
-      
+
       // Force immediate visual update
       updateSelectedImageStyles({ width });
-      
+
       // Force a re-render by updating the selected image
-      const newSelectedImage = {...selectedImage, attrs: {...selectedImage.attrs, width}};
+      const newSelectedImage = { ...selectedImage, attrs: { ...selectedImage.attrs, width } };
       setSelectedImage(newSelectedImage);
     }
   };
@@ -694,12 +718,12 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
         .focus()
         .setNodeAttribute('image', 'alignment', alignment)
         .run();
-      
+
       // Force immediate visual update
       updateSelectedImageStyles({ alignment });
-      
+
       // Force a re-render by updating the selected image
-      const newSelectedImage = {...selectedImage, attrs: {...selectedImage.attrs, alignment}};
+      const newSelectedImage = { ...selectedImage, attrs: { ...selectedImage.attrs, alignment } };
       setSelectedImage(newSelectedImage);
     }
   };
@@ -712,24 +736,24 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
         document.querySelectorAll('.editor-image').forEach(imageEl => {
           const width = imageEl.getAttribute('data-width');
           const alignment = imageEl.getAttribute('data-alignment');
-          
+
           // Apply styling directly
           if (width) {
             imageEl.style.width = width;
           }
-          
+
           if (alignment) {
             imageEl.style.textAlign = alignment;
           }
         });
       };
-      
+
       // Update on mount
       updateAllImages();
-      
+
       // Also add an update listener
       editor.on('update', updateAllImages);
-      
+
       return () => {
         editor.off('update', updateAllImages);
       };
@@ -743,7 +767,7 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
 
   const getImageAttrs = () => {
     if (!isImageSelected()) return {};
-    
+
     const node = editor.state.selection.node;
     return node?.attrs || {};
   };
@@ -777,10 +801,10 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
   return (
     <div className="max-w-5xl mx-auto bg-white min-h-screen">
       <style>{editorStyles}</style>
-      
+
       {/* Move the toolbar button to a better position */}
       <div className="fixed bottom-10 right-8 z-50">
-        <button 
+        <button
           onClick={() => setShowToolbar(!showToolbar)}
           className="w-12 h-12 rounded-full bg-black text-white shadow-lg flex items-center justify-center hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black transition"
           title="Add content"
@@ -828,7 +852,7 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
           required
           aria-required="true"
         />
-        
+
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="w-full sm:w-auto">
             <label htmlFor="blog-category" className="sr-only">Category</label>
@@ -846,7 +870,34 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
               ))}
             </select>
           </div>
-          
+
+          {/* Font Selection */}
+          <div className="w-full sm:w-auto">
+            <label htmlFor="blog-font" className="sr-only">Font</label>
+            <select
+              id="blog-font"
+              value={currentFont}
+              onChange={(e) => {
+                const font = e.target.value;
+                if (editor) {
+                  if (font === '') {
+                    editor.chain().focus().unsetFontFamily().run();
+                  } else {
+                    editor.chain().focus().setFontFamily(font).run();
+                  }
+                  setCurrentFont(font);
+                }
+              }}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+            >
+              <option value="">Default Font</option>
+              <option value="Times New Roman, Times, serif">Times New Roman</option>
+              <option value="Arial, Helvetica, sans-serif">Arial</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+            </select>
+          </div>
+
           <div className="flex-1">
             <label htmlFor="blog-tags" className="sr-only">Tags</label>
             <input
@@ -906,7 +957,7 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
                   isActive={() => editor.isActive('italic')}
                 />
               </div>
-              
+
               <div className="flex items-center px-2">
                 <FloatingButton
                   icon="🔗"
@@ -935,7 +986,7 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
           <BubbleMenu
             editor={editor}
             shouldShow={({ editor }) => editor.isActive('image')}
-            tippyOptions={{ 
+            tippyOptions={{
               duration: 100,
               placement: 'top-start',
               offset: [0, 10],
@@ -1062,7 +1113,7 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
           )}
           {saveStatus === 'saved' && (
             <span className="inline-flex items-center text-gray-600" aria-live="polite">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0L3.293 9.207A1 1 0 114.707 7.793l3.043 3.043 6.543-6.543a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0L3.293 9.207A1 1 0 114.707 7.793l3.043 3.043 6.543-6.543a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
               Saved
             </span>
           )}

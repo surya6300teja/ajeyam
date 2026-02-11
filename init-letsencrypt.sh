@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 if ! [ -x "$(command -v docker-compose)" ]; then
