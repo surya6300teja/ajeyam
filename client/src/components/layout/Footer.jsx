@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
-  
+
   return (
     <footer className="bg-background-dark text-text-light py-10">
       <div className="container-custom">
@@ -10,10 +10,10 @@ const Footer = () => {
           <div className="col-span-1">
             <Link to="/" className="text-2xl font-bold font-serif text-accent">Ajeyam</Link>
             <p className="mt-4 text-sm">
-              Unraveling the History of India, One Story at a Time. Discover the rich cultural heritage and historical significance of the Indian subcontinent.
+              Unraveling the History of India, One Story at a Time. Discover the rich cultural heritage and historical significance of the Indian subcontinent
             </p>
           </div>
-          
+
           <div className="col-span-1">
             <h3 className="text-lg font-semibold mb-4 font-serif">Quick Links</h3>
             <ul className="space-y-2">
@@ -23,7 +23,7 @@ const Footer = () => {
               <li><Link to="/about" className="hover:text-primary transition-colors">About Us</Link></li>
             </ul>
           </div>
-          
+
           <div className="col-span-1">
             <h3 className="text-lg font-semibold mb-4 font-serif">Categories</h3>
             <ul className="space-y-2">
@@ -34,19 +34,19 @@ const Footer = () => {
               <li><Link to="/categories/modern-history" className="hover:text-primary transition-colors">Modern History</Link></li>
             </ul>
           </div>
-          
+
           <div className="col-span-1">
             <h3 className="text-lg font-semibold mb-4 font-serif">Subscribe</h3>
             <p className="mb-4 text-sm">Stay updated with our latest blogs and articles.</p>
             <form className="flex flex-col sm:flex-row gap-2">
-              <input 
-                type="email" 
-                placeholder="Your email address" 
+              <input
+                type="email"
+                placeholder="Your email address"
                 className="px-4 py-2 rounded-md text-text bg-white focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               />
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="btn-primary whitespace-nowrap"
               >
                 Subscribe
@@ -54,7 +54,7 @@ const Footer = () => {
             </form>
           </div>
         </div>
-        
+
         <div className="border-t border-gray-700 mt-10 pt-6 flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm">© {currentYear} Ajeyam. All rights reserved.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
