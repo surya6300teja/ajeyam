@@ -337,13 +337,37 @@ const BlogDetail = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-amber-50/40">
-        <div className="page-flip-container">
-          <div className="book"></div>
-          <div className="page page-back"></div>
-          <div className="page page-front"></div>
+      <div className="min-h-screen bg-[#FBF7F4]">
+        <div className="max-w-4xl mx-auto px-4 py-12 animate-pulse">
+          {/* Cover image skeleton */}
+          <div className="w-full h-64 md:h-96 bg-gray-200 rounded-xl mb-8"></div>
+          {/* Category + date skeleton */}
+          <div className="flex gap-3 mb-4">
+            <div className="h-5 bg-gray-200 rounded w-20"></div>
+            <div className="h-5 bg-gray-200 rounded w-32"></div>
+          </div>
+          {/* Title skeleton */}
+          <div className="h-10 bg-gray-200 rounded w-3/4 mb-3"></div>
+          <div className="h-10 bg-gray-200 rounded w-1/2 mb-6"></div>
+          {/* Author skeleton */}
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+            <div>
+              <div className="h-4 bg-gray-200 rounded w-28 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-20"></div>
+            </div>
+          </div>
+          {/* Content skeleton */}
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="h-4 bg-gray-200 rounded" style={{ width: `${85 + Math.random() * 15}%` }}></div>
+            ))}
+            <div className="h-48 bg-gray-200 rounded-lg my-6"></div>
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-4 bg-gray-200 rounded" style={{ width: `${75 + Math.random() * 25}%` }}></div>
+            ))}
+          </div>
         </div>
-        <p className="text-gray-600 mt-2">Loading article...</p>
       </div>
     );
   }
@@ -352,15 +376,23 @@ const BlogDetail = () => {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 bg-gray-50">
         <div className="text-center">
-          <h2 className="text-xl font-medium tracking-tight text-gray-900 mb-2">
+          <h2 className="text-xl font-medium tracking-tight text-gray-900 mb-4">
             {error || "Blog not found"}
           </h2>
-          <button
-            className="text-green-600 hover:text-green-700 tracking-wide text-sm font-medium"
-            onClick={() => navigate('/blogs')}
-          >
-            Go back to all stories
-          </button>
+          <div className="flex gap-4 justify-center">
+            <button
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
+              onClick={() => { setError(null); setLoading(true); }}
+            >
+              Try Again
+            </button>
+            <button
+              className="text-green-600 hover:text-green-700 tracking-wide text-sm font-medium"
+              onClick={() => navigate('/blogs')}
+            >
+              Go back to all stories
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -369,7 +401,9 @@ const BlogDetail = () => {
   const sanitizedBlog = {
     ...blog,
     title: blog.title || 'Untitled Blog',
-    content: blog.content || '<p>No content available</p>',
+    // Add lazy loading to all images in content
+    content: (blog.content || '<p>No content available</p>')
+      .replace(/<img(?![^>]*loading=)/g, '<img loading="lazy"'),
     coverImage: ensureValidCoverImage(blog.coverImage),
     author: blog.author || { name: 'Unknown Author' },
     createdAt: blog.createdAt || new Date().toISOString(),

@@ -75,11 +75,15 @@ exports.getAllBlogs = async (req, res) => {
       sortBy = { publishedAt: -1 };
     }
 
-    // Execute query
+    // Execute query — exclude heavy fields for list view
     const blogs = await Blog.find(query)
+      .select('-content -likes')
+      .populate('author', 'name avatar')
+      .populate('category', 'name')
       .sort(sortBy)
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     // Get total count for pagination
     const total = await Blog.countDocuments(query);
@@ -110,12 +114,20 @@ exports.getBlog = async (req, res) => {
   try {
     const { identifier } = req.params;
 
-    let blog;
-    if (mongoose.Types.ObjectId.isValid(identifier)) {
-      blog = await Blog.findById(identifier);
-    } else {
-      blog = await Blog.findOne({ slug: identifier });
-    }
+    // Build query based on identifier type
+    const query = mongoose.Types.ObjectId.isValid(identifier)
+      ? { _id: identifier }
+      : { slug: identifier };
+
+    // Atomically increment view count and return updated doc
+    const blog = await Blog.findOneAndUpdate(
+      query,
+      { $inc: { views: 1 } },
+      { new: true }
+    )
+      .populate('author', 'name avatar bio')
+      .populate('category', 'name')
+      .lean();
 
     if (!blog) {
       return res.status(404).json({
@@ -126,16 +138,10 @@ exports.getBlog = async (req, res) => {
 
     // Process content to ensure proper formatting
     if (blog.content) {
-      // Only add spacing to plain paragraphs (not those already styled)
       blog.content = blog.content
         .replace(/<p(?![^>]*class=)>/g, '<p class="my-6">')
-        // Style standalone images that don't have alignment/class attributes
         .replace(/<img(?![^>]*class=)(?![^>]*data-alignment)([^>]*?)(?=\s*\/?>)/g, '<img class="my-8 rounded-xl shadow-lg max-w-full mx-auto"$1');
     }
-
-    // Increment view count
-    blog.views += 1;
-    await blog.save({ validateBeforeSave: false });
 
     res.status(200).json({
       status: 'success',
@@ -287,29 +293,17 @@ exports.toggleLike = async (req, res) => {
 exports.getFeaturedBlogs = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 6;
-    console.log('Fetching featured blogs with limit:', limit);
 
     const featuredBlogs = await Blog.find({
       isFeatured: true,
       status: 'published'
     })
+      .select('-content -likes')
       .populate('author', 'name avatar bio')
       .populate('category', 'name')
       .sort({ publishedAt: -1 })
-      .limit(limit);
-
-    console.log(`Found ${featuredBlogs.length} featured blogs`);
-
-    // Log the first blog if available (for debugging)
-    if (featuredBlogs.length > 0) {
-      console.log('First blog sample:', {
-        id: featuredBlogs[0]._id,
-        title: featuredBlogs[0].title,
-        author: featuredBlogs[0].author,
-        category: featuredBlogs[0].category,
-        isFeatured: featuredBlogs[0].isFeatured
-      });
-    }
+      .limit(limit)
+      .lean();
 
     res.status(200).json({
       status: 'success',
@@ -317,7 +311,6 @@ exports.getFeaturedBlogs = async (req, res) => {
       data: { blogs: featuredBlogs }
     });
   } catch (error) {
-    console.error('Error in getFeaturedBlogs:', error);
     res.status(500).json({
       status: 'error',
       message: error.message
@@ -328,7 +321,10 @@ exports.getFeaturedBlogs = async (req, res) => {
 // Get related blogs
 exports.getRelatedBlogs = async (req, res) => {
   try {
-    const blog = await Blog.findById(req.params.id);
+    // Only fetch category and tags for the lookup
+    const blog = await Blog.findById(req.params.id)
+      .select('category tags')
+      .lean();
 
     if (!blog) {
       return res.status(404).json({
@@ -339,17 +335,20 @@ exports.getRelatedBlogs = async (req, res) => {
 
     const limit = parseInt(req.query.limit, 10) || 3;
 
-    // Find blogs in the same category or with same tags
     const relatedBlogs = await Blog.find({
-      _id: { $ne: blog._id }, // Exclude current blog
+      _id: { $ne: blog._id },
       status: 'published',
       $or: [
         { category: blog.category },
-        { tags: { $in: blog.tags } }
+        { tags: { $in: blog.tags || [] } }
       ]
     })
+      .select('-content -likes')
+      .populate('author', 'name avatar')
+      .populate('category', 'name')
       .sort({ publishedAt: -1 })
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     res.status(200).json({
       status: 'success',
@@ -375,9 +374,13 @@ exports.getBlogsByAuthor = async (req, res) => {
       author: req.params.authorId,
       status: 'published'
     })
+      .select('-content -likes')
+      .populate('author', 'name avatar')
+      .populate('category', 'name')
       .sort({ publishedAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     const total = await Blog.countDocuments({
       author: req.params.authorId,
@@ -505,10 +508,13 @@ exports.getPendingBlogs = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const pendingBlogs = await Blog.find({ status: 'pending' })
+      .select('-content -likes')
       .populate('author', 'name email')
+      .populate('category', 'name')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     const total = await Blog.countDocuments({ status: 'pending' });
     console.log(`Fetched ${pendingBlogs.length} blogs, Total matching: ${total}`);
@@ -541,10 +547,13 @@ exports.getPublishedBlogs = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const publishedBlogs = await Blog.find({ status: 'published' })
+      .select('-content -likes')
       .populate('author', 'name email')
+      .populate('category', 'name')
       .sort({ publishedAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     const total = await Blog.countDocuments({ status: 'published' });
 

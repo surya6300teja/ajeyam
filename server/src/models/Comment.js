@@ -51,6 +51,10 @@ const CommentSchema = new mongoose.Schema(
   }
 );
 
+// Database indexes
+CommentSchema.index({ blog: 1, parentComment: 1, createdAt: -1 });
+CommentSchema.index({ blog: 1, isDeleted: 1 });
+
 // Virtual field for replies
 CommentSchema.virtual('replies', {
   ref: 'Comment',
@@ -59,49 +63,44 @@ CommentSchema.virtual('replies', {
 });
 
 // Middleware to update likesCount from likes array
-CommentSchema.pre('save', function(next) {
+CommentSchema.pre('save', function (next) {
   if (this.isModified('likes')) {
     this.likesCount = this.likes.length;
   }
   next();
 });
 
-// Middleware to populate user and replies when querying comments
-CommentSchema.pre(/^find/, function(next) {
-  this.populate({
-    path: 'user',
-    select: 'name avatar'
-  });
-  
-  next();
-});
+// NOTE: Auto-populate of user removed for performance.
+// Controllers must explicitly call .populate() when needed.
 
 // Middleware to exclude deleted comments from query results
-CommentSchema.pre(/^find/, function(next) {
+CommentSchema.pre(/^find/, function (next) {
   this.find({ isDeleted: { $ne: true } });
   next();
 });
 
 // Static method to get all root comments for a blog
-CommentSchema.statics.getRootComments = function(blogId) {
+CommentSchema.statics.getRootComments = function (blogId) {
   return this.find({
     blog: blogId,
     parentComment: null
   })
+    .populate('user', 'name avatar')
     .sort('-createdAt')
     .populate({
       path: 'replies',
+      populate: { path: 'user', select: 'name avatar' },
       options: { sort: { createdAt: 1 } }
     });
 };
 
 // Instance method to check if a user has liked this comment
-CommentSchema.methods.isLikedByUser = function(userId) {
+CommentSchema.methods.isLikedByUser = function (userId) {
   return this.likes.some(like => like.toString() === userId.toString());
 };
 
 // Instance method to toggle like status for a user
-CommentSchema.methods.toggleLike = function(userId) {
+CommentSchema.methods.toggleLike = function (userId) {
   if (this.isLikedByUser(userId)) {
     // Remove like
     this.likes = this.likes.filter(like => like.toString() !== userId.toString());
@@ -109,13 +108,13 @@ CommentSchema.methods.toggleLike = function(userId) {
     // Add like
     this.likes.push(userId);
   }
-  
+
   this.likesCount = this.likes.length;
   return this.save();
 };
 
 // Instance method to soft delete a comment
-CommentSchema.methods.softDelete = function() {
+CommentSchema.methods.softDelete = function () {
   this.isDeleted = true;
   this.deletedAt = new Date();
   this.content = 'This comment has been deleted';
@@ -123,14 +122,14 @@ CommentSchema.methods.softDelete = function() {
 };
 
 // Post save hook to update comment count on the blog
-CommentSchema.post('save', async function() {
+CommentSchema.post('save', async function () {
   try {
     // Import Blog model here to avoid circular dependencies
     const Blog = mongoose.model('Blog');
-    
+
     // Update the commentsCount on the blog document
     const commentsCount = await this.constructor.countDocuments({ blog: this.blog, isDeleted: { $ne: true } });
-    
+
     await Blog.findByIdAndUpdate(this.blog, { commentsCount });
   } catch (err) {
     console.error('Error updating blog comment count:', err);

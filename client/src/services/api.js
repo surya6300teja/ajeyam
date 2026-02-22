@@ -7,7 +7,7 @@ console.log('API URL configured as:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 30000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -97,7 +97,7 @@ const blogAPI = {
   getAllBlogs: (params) => api.get('/blogs', { params }),
   getFeaturedBlogs: (limit = 3) => {
     console.log('Calling getFeaturedBlogs with limit:', limit);
-    return api.get('/blogs/featured', { 
+    return api.get('/blogs/featured', {
       params: { limit }
     });
   },

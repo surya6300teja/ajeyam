@@ -91,6 +91,15 @@ const BlogSchema = new mongoose.Schema(
   }
 );
 
+// ===== Database Indexes =====
+// Compound indexes for common query patterns
+BlogSchema.index({ status: 1, publishedAt: -1 });  // getAllBlogs, getPublishedBlogs
+BlogSchema.index({ status: 1, createdAt: -1 });     // getPendingBlogs
+BlogSchema.index({ author: 1, status: 1 });          // getBlogsByAuthor
+BlogSchema.index({ category: 1, status: 1 });        // category filter
+BlogSchema.index({ isFeatured: 1, status: 1 });      // getFeaturedBlogs
+BlogSchema.index({ tags: 1 });                        // tag queries
+
 // Virtual field for comments - not stored in DB, but accessible in queries
 BlogSchema.virtual('comments', {
   ref: 'Comment',
@@ -117,18 +126,9 @@ BlogSchema.pre('save', function (next) {
   next();
 });
 
-// When a blog is queried, automatically populate author and category
-BlogSchema.pre(/^find/, function (next) {
-  this.populate({
-    path: 'author',
-    select: 'name avatar bio'
-  }).populate({
-    path: 'category',
-    select: 'name'
-  });
-
-  next();
-});
+// NOTE: Auto-populate removed for performance.
+// Controllers must explicitly call .populate() when needed.
+// This avoids 2 extra DB queries on every find() call.
 
 // Static method to calculate average read time of all blogs by a specific author
 BlogSchema.statics.calcAverageReadTime = async function (authorId) {
