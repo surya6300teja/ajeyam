@@ -48,7 +48,7 @@ const Header = () => {
   };
 
   return (
-    <Disclosure as="nav" className="bg-white border-b border-gray-200">
+    <Disclosure as="nav" className={`bg-white border-b border-gray-200 sticky top-0 z-40 transition-shadow duration-300 ${scrollY > 0 ? 'shadow-md' : ''}`}>
       {({ open }) => (
         <>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

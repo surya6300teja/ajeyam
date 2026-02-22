@@ -75,11 +75,6 @@ const CreateBlog = () => {
         throw new Error('Please fill in all required fields');
       }
 
-      // Ensure content is at least 500 characters
-      if (blogData.content.length < 500) {
-        throw new Error('Blog content must be at least 500 characters long');
-      }
-
       // Prepare the blog data for submission
       const blogPayload = {
         title: blogData.title,
@@ -233,6 +228,7 @@ const CreateBlog = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <BlogEditor
               onSave={handleSave}
+              errorMessage={errorMessage}
               categories={categories.map(cat => ({
                 id: cat._id,
                 name: cat.name

@@ -7,8 +7,6 @@ const BlogSchema = new mongoose.Schema(
       type: String,
       required: [true, 'A blog must have a title'],
       trim: true,
-      minlength: [10, 'Blog title must be at least 10 characters long'],
-      maxlength: [100, 'Blog title cannot exceed 100 characters']
     },
     slug: {
       type: String,
@@ -19,13 +17,10 @@ const BlogSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide a blog summary'],
       trim: true,
-      minlength: [10, 'Summary must be at least 10 characters long'],
-      maxlength: [300, 'Summary cannot exceed 300 characters']
     },
     content: {
       type: String,
       required: [true, 'Please provide blog content'],
-      minlength: [500, 'Blog content must be at least 500 characters long']
     },
     coverImage: {
       type: String,

@@ -7,7 +7,7 @@ exports.getAllBlogs = async (req, res) => {
   try {
     // Build query
     let query = {};
-    
+
     // Status filter - only published blogs for regular users
     if (req.user && req.user.role === 'admin') {
       // Admin can see blogs with any status
@@ -23,27 +23,27 @@ exports.getAllBlogs = async (req, res) => {
       // Regular users can only see published blogs
       query.status = 'published';
     }
-    
+
     // Category filter
     if (req.query.category) {
       query.category = req.query.category;
     }
-    
+
     // Author filter
     if (req.query.author) {
       query.author = req.query.author;
     }
-    
+
     // Tag filter
     if (req.query.tag) {
       query.tags = { $in: [req.query.tag] };
     }
-    
+
     // Featured filter
     if (req.query.featured === 'true') {
       query.isFeatured = true;
     }
-    
+
     // Search functionality
     if (req.query.search) {
       const searchRegex = new RegExp(req.query.search, 'i');
@@ -54,12 +54,12 @@ exports.getAllBlogs = async (req, res) => {
         { tags: searchRegex }
       ];
     }
-    
+
     // Execute query with pagination and sorting
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
-    
+
     let sortBy = {};
     if (req.query.sort) {
       const sortFields = req.query.sort.split(',');
@@ -74,16 +74,16 @@ exports.getAllBlogs = async (req, res) => {
       // Default sort by publishedAt in descending order
       sortBy = { publishedAt: -1 };
     }
-    
+
     // Execute query
     const blogs = await Blog.find(query)
       .sort(sortBy)
       .skip(skip)
       .limit(limit);
-    
+
     // Get total count for pagination
     const total = await Blog.countDocuments(query);
-    
+
     res.status(200).json({
       status: 'success',
       results: blogs.length,
@@ -109,41 +109,34 @@ exports.getAllBlogs = async (req, res) => {
 exports.getBlog = async (req, res) => {
   try {
     const { identifier } = req.params;
-    
+
     let blog;
     if (mongoose.Types.ObjectId.isValid(identifier)) {
       blog = await Blog.findById(identifier);
     } else {
       blog = await Blog.findOne({ slug: identifier });
     }
-    
+
     if (!blog) {
       return res.status(404).json({
         status: 'error',
         message: 'Blog not found'
       });
     }
-    
+
     // Process content to ensure proper formatting
     if (blog.content) {
-      // Ensure paragraph spacing
+      // Only add spacing to plain paragraphs (not those already styled)
       blog.content = blog.content
-        // Make sure all paragraphs have proper spacing
-        .replace(/<p>/g, '<p class="my-6">')
-        // Ensure images have proper styling
-        .replace(/<img /g, '<img class="my-8 rounded-xl shadow-lg max-w-full mx-auto" ')
-        // Ensure editor-image has proper container styling while preserving data attributes
-        .replace(/<div class="editor-image/g, '<div class="editor-image my-8"')
-        // Make sure image width classes are preserved
-        .replace(/style="width: (33%|50%|75%|100%)"/g, (match, width) => {
-          return `style="width: ${width}" data-width="${width}"`;
-        });
+        .replace(/<p(?![^>]*class=)>/g, '<p class="my-6">')
+        // Style standalone images that don't have alignment/class attributes
+        .replace(/<img(?![^>]*class=)(?![^>]*data-alignment)([^>]*?)(?=\s*\/?>)/g, '<img class="my-8 rounded-xl shadow-lg max-w-full mx-auto"$1');
     }
-    
+
     // Increment view count
     blog.views += 1;
     await blog.save({ validateBeforeSave: false });
-    
+
     res.status(200).json({
       status: 'success',
       data: { blog }
@@ -161,14 +154,14 @@ exports.createBlog = async (req, res) => {
   try {
     // Set the author to the current user
     req.body.author = req.user.id;
-    
+
     // For non-admin users, set initial status to 'pending'
     if (req.user.role !== 'admin') {
       req.body.status = 'pending';
     }
-    
+
     const newBlog = await Blog.create(req.body);
-    
+
     res.status(201).json({
       status: 'success',
       data: { blog: newBlog }
@@ -185,14 +178,14 @@ exports.createBlog = async (req, res) => {
 exports.updateBlog = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
-    
+
     if (!blog) {
       return res.status(404).json({
         status: 'error',
         message: 'Blog not found'
       });
     }
-    
+
     // Check if user is author or admin
     if (blog.author.id !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
@@ -200,17 +193,17 @@ exports.updateBlog = async (req, res) => {
         message: 'You can only edit your own blogs'
       });
     }
-    
+
     // For non-admin users updating published blog, set status back to pending
     if (req.user.role !== 'admin' && blog.status === 'published') {
       req.body.status = 'pending';
     }
-    
+
     const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
     });
-    
+
     res.status(200).json({
       status: 'success',
       data: { blog: updatedBlog }
@@ -227,14 +220,14 @@ exports.updateBlog = async (req, res) => {
 exports.deleteBlog = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
-    
+
     if (!blog) {
       return res.status(404).json({
         status: 'error',
         message: 'Blog not found'
       });
     }
-    
+
     // Check if user is author or admin
     if (blog.author.id !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
@@ -242,12 +235,12 @@ exports.deleteBlog = async (req, res) => {
         message: 'You can only delete your own blogs'
       });
     }
-    
+
     await Blog.findByIdAndDelete(req.params.id);
-    
+
     // Delete all comments associated with the blog
     await Comment.deleteMany({ blog: req.params.id });
-    
+
     res.status(204).json({
       status: 'success',
       data: null
@@ -264,19 +257,19 @@ exports.deleteBlog = async (req, res) => {
 exports.toggleLike = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
-    
+
     if (!blog) {
       return res.status(404).json({
         status: 'error',
         message: 'Blog not found'
       });
     }
-    
+
     const updatedBlog = await blog.toggleLike(req.user.id);
-    
+
     res.status(200).json({
       status: 'success',
-      data: { 
+      data: {
         blog: updatedBlog,
         liked: updatedBlog.isLikedByUser(req.user.id),
         likesCount: updatedBlog.likesCount
@@ -295,7 +288,7 @@ exports.getFeaturedBlogs = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 6;
     console.log('Fetching featured blogs with limit:', limit);
-    
+
     const featuredBlogs = await Blog.find({
       isFeatured: true,
       status: 'published'
@@ -304,9 +297,9 @@ exports.getFeaturedBlogs = async (req, res) => {
       .populate('category', 'name')
       .sort({ publishedAt: -1 })
       .limit(limit);
-    
+
     console.log(`Found ${featuredBlogs.length} featured blogs`);
-    
+
     // Log the first blog if available (for debugging)
     if (featuredBlogs.length > 0) {
       console.log('First blog sample:', {
@@ -317,7 +310,7 @@ exports.getFeaturedBlogs = async (req, res) => {
         isFeatured: featuredBlogs[0].isFeatured
       });
     }
-    
+
     res.status(200).json({
       status: 'success',
       results: featuredBlogs.length,
@@ -336,16 +329,16 @@ exports.getFeaturedBlogs = async (req, res) => {
 exports.getRelatedBlogs = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
-    
+
     if (!blog) {
       return res.status(404).json({
         status: 'error',
         message: 'Blog not found'
       });
     }
-    
+
     const limit = parseInt(req.query.limit, 10) || 3;
-    
+
     // Find blogs in the same category or with same tags
     const relatedBlogs = await Blog.find({
       _id: { $ne: blog._id }, // Exclude current blog
@@ -357,7 +350,7 @@ exports.getRelatedBlogs = async (req, res) => {
     })
       .sort({ publishedAt: -1 })
       .limit(limit);
-    
+
     res.status(200).json({
       status: 'success',
       results: relatedBlogs.length,
@@ -377,7 +370,7 @@ exports.getBlogsByAuthor = async (req, res) => {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
-    
+
     const blogs = await Blog.find({
       author: req.params.authorId,
       status: 'published'
@@ -385,12 +378,12 @@ exports.getBlogsByAuthor = async (req, res) => {
       .sort({ publishedAt: -1 })
       .skip(skip)
       .limit(limit);
-    
+
     const total = await Blog.countDocuments({
       author: req.params.authorId,
       status: 'published'
     });
-    
+
     res.status(200).json({
       status: 'success',
       results: blogs.length,
@@ -416,39 +409,39 @@ exports.getBlogsByAuthor = async (req, res) => {
 exports.changeBlogStatus = async (req, res) => {
   try {
     const { status, rejectionReason } = req.body;
-    
+
     if (!['draft', 'pending', 'published', 'rejected'].includes(status)) {
       return res.status(400).json({
         status: 'error',
         message: 'Invalid status'
       });
     }
-    
+
     const blog = await Blog.findById(req.params.id);
-    
+
     if (!blog) {
       return res.status(404).json({
         status: 'error',
         message: 'Blog not found'
       });
     }
-    
+
     blog.status = status;
-    
+
     // Set rejectionReason if status is 'rejected'
     if (status === 'rejected') {
       blog.rejectionReason = rejectionReason || 'Blog was rejected by admin';
     } else {
       blog.rejectionReason = undefined;
     }
-    
+
     // Set publishedAt if status is 'published' and publishedAt is not set
     if (status === 'published' && !blog.publishedAt) {
       blog.publishedAt = Date.now();
     }
-    
+
     await blog.save();
-    
+
     res.status(200).json({
       status: 'success',
       data: { blog }
@@ -465,15 +458,15 @@ exports.changeBlogStatus = async (req, res) => {
 exports.debugFeaturedBlogs = async (req, res) => {
   try {
     console.log('Debug route: Directly fetching featured blogs');
-    
+
     // Direct query without population to keep it simple
     const featuredBlogs = await Blog.find({
       isFeatured: true,
       status: 'published'
     }).lean();
-    
+
     console.log(`Debug found ${featuredBlogs.length} featured blogs`);
-    
+
     // Simple output of key fields for debugging
     const simplifiedBlogs = featuredBlogs.map(blog => ({
       _id: blog._id,
@@ -489,7 +482,7 @@ exports.debugFeaturedBlogs = async (req, res) => {
       createdAt: blog.createdAt,
       publishedAt: blog.publishedAt
     }));
-    
+
     res.status(200).json({
       status: 'success',
       count: featuredBlogs.length,
@@ -510,13 +503,13 @@ exports.getPendingBlogs = async (req, res) => {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
-    
+
     const pendingBlogs = await Blog.find({ status: 'pending' })
       .populate('author', 'name email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-    
+
     const total = await Blog.countDocuments({ status: 'pending' });
     console.log(`Fetched ${pendingBlogs.length} blogs, Total matching: ${total}`);
     res.status(200).json({
@@ -546,15 +539,15 @@ exports.getPublishedBlogs = async (req, res) => {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
-    
+
     const publishedBlogs = await Blog.find({ status: 'published' })
       .populate('author', 'name email')
       .sort({ publishedAt: -1 })
       .skip(skip)
       .limit(limit);
-    
+
     const total = await Blog.countDocuments({ status: 'published' });
-    
+
     res.status(200).json({
       status: 'success',
       results: publishedBlogs.length,
@@ -580,14 +573,14 @@ exports.getPublishedBlogs = async (req, res) => {
 exports.approveBlog = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
-    
+
     if (!blog) {
       return res.status(404).json({
         status: 'error',
         message: 'Blog not found'
       });
     }
-    
+
     // Check if blog is in pending status
     if (blog.status !== 'pending') {
       return res.status(400).json({
@@ -595,12 +588,12 @@ exports.approveBlog = async (req, res) => {
         message: 'Only pending blogs can be approved'
       });
     }
-    
+
     // Update blog status to published and set publishedAt
     blog.status = 'published';
     blog.publishedAt = Date.now();
     await blog.save();
-    
+
     res.status(200).json({
       status: 'success',
       data: { blog }
@@ -617,23 +610,23 @@ exports.approveBlog = async (req, res) => {
 exports.rejectBlog = async (req, res) => {
   try {
     const { rejectionReason } = req.body;
-    
+
     if (!rejectionReason) {
       return res.status(400).json({
         status: 'error',
         message: 'Rejection reason is required'
       });
     }
-    
+
     const blog = await Blog.findById(req.params.id);
-    
+
     if (!blog) {
       return res.status(404).json({
         status: 'error',
         message: 'Blog not found'
       });
     }
-    
+
     // Check if blog is in pending status
     if (blog.status !== 'pending') {
       return res.status(400).json({
@@ -641,12 +634,12 @@ exports.rejectBlog = async (req, res) => {
         message: 'Only pending blogs can be rejected'
       });
     }
-    
+
     // Update blog status to rejected and set rejection reason
     blog.status = 'rejected';
     blog.rejectionReason = rejectionReason;
     await blog.save();
-    
+
     res.status(200).json({
       status: 'success',
       data: { blog }

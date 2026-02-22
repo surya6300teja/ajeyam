@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEditor, EditorContent, BubbleMenu, Extension } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
@@ -7,9 +7,46 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
 import FontFamily from '@tiptap/extension-font-family';
 import TextStyle from '@tiptap/extension-text-style';
+import { NodeSelection } from '@tiptap/pm/state';
 import './BlogEditor.css';
 import ReactDOM from 'react-dom';
 import React from 'react';
+
+// Custom FontSize extension — applies as a mark (inline style) so it only
+// affects the current selection or future typing at the cursor, not all text.
+const FontSize = Extension.create({
+  name: 'fontSize',
+  addOptions() {
+    return { types: ['textStyle'] };
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: element => element.style.fontSize?.replace(/[^\d.]/g, '') || null,
+            renderHTML: attributes => {
+              if (!attributes.fontSize) return {};
+              return { style: `font-size: ${attributes.fontSize}` };
+            },
+          },
+        },
+      },
+    ];
+  },
+  addCommands() {
+    return {
+      setFontSize: (size) => ({ chain }) => {
+        return chain().setMark('textStyle', { fontSize: size }).run();
+      },
+      unsetFontSize: () => ({ chain }) => {
+        return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run();
+      },
+    };
+  },
+});
 
 // Floating toolbar button component
 const FloatingButton = ({ icon, title, action, isActive = null }) => (
@@ -103,7 +140,7 @@ const ImageOptions = ({ editor, node, setImageWidth, setImageAlignment }) => (
 
 const DRAFT_STORAGE_KEY = 'blog_draft';
 
-const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
+const BlogEditor = ({ initialContent = '', onSave, categories = [], errorMessage = '' }) => {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState('');
@@ -116,6 +153,9 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
   const [saveStatus, setSaveStatus] = useState('');
   const saveTimerRef = useRef(null);
   const [currentFont, setCurrentFont] = useState('');
+  const [lineSpacing, setLineSpacing] = useState(1.6);
+  const [fontSize, setFontSize] = useState(16);
+  const editorWrapperRef = useRef(null);
 
   // Initialize the editor with enhanced features
   const editor = useEditor({
@@ -126,120 +166,124 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
         }
       }),
       TextStyle,
+      FontSize,
       FontFamily.configure({
         types: ['textStyle'],
       }),
-      Image.configure({
-        inline: true,
-        allowBase64: true,
-        HTMLAttributes: {
-          class: 'editor-image relative group',
-        },
-        // Add custom attributes for image alignment and sizing
+      Image.extend({
         addAttributes() {
           return {
+            ...this.parent?.(),
             alignment: {
-              default: 'left',
+              default: 'center',
+              parseHTML: element => {
+                // Check data attribute first, then parse from inline style
+                if (element.getAttribute('data-alignment')) return element.getAttribute('data-alignment');
+                // Check parent wrapper
+                const wrapper = element.closest?.('.editor-image');
+                if (wrapper?.getAttribute('data-alignment')) return wrapper.getAttribute('data-alignment');
+                // Parse from inline margin styles
+                const style = element.getAttribute('style') || '';
+                if (style.includes('margin-right: 0px') || style.includes('margin-right: 0;') || style.includes('margin-right:0')) return 'right';
+                if (style.includes('margin-left: 0px') || style.includes('margin-left: 0;') || style.includes('margin-left:0')) return 'left';
+                return 'center';
+              },
               renderHTML: attributes => ({
                 'data-alignment': attributes.alignment,
-                style: `display: block; text-align: ${attributes.alignment}`,
               }),
             },
             width: {
-              default: 'auto',
+              default: '100%',
+              parseHTML: element => {
+                if (element.getAttribute('data-width')) return element.getAttribute('data-width');
+                const wrapper = element.closest?.('.editor-image');
+                if (wrapper?.getAttribute('data-width')) return wrapper.getAttribute('data-width');
+                // Parse from inline style
+                const style = element.getAttribute('style') || '';
+                const widthMatch = style.match(/width:\s*([\d]+%)/);
+                if (widthMatch) return widthMatch[1];
+                return '100%';
+              },
               renderHTML: attributes => ({
                 'data-width': attributes.width,
-                style: `width: ${attributes.width}`,
               }),
-            }
-          }
-        },
-        // Add a nodeView to highlight selected images
-        nodeView: ({ node, editor, getPos }) => {
-          // Create the DOM structure
-          const dom = document.createElement('div');
-          dom.classList.add('editor-image');
-
-          // Add appropriate data attributes
-          if (node.attrs.alignment) {
-            dom.setAttribute('data-alignment', node.attrs.alignment);
-            dom.style.textAlign = node.attrs.alignment;
-          }
-
-          if (node.attrs.width) {
-            dom.setAttribute('data-width', node.attrs.width);
-            dom.style.width = node.attrs.width;
-          }
-
-          // Create the image element
-          const img = document.createElement('img');
-          img.src = node.attrs.src;
-          img.alt = node.attrs.alt || '';
-
-          if (node.attrs.width && node.attrs.width !== 'auto') {
-            img.style.width = '100%'; // Always 100% of parent
-            dom.style.width = node.attrs.width; // Parent controls actual width
-          }
-
-          dom.appendChild(img);
-
-          // Add click handler to select the image
-          dom.addEventListener('click', () => {
-            const { state, dispatch } = editor.view;
-            const position = getPos();
-
-            // Select this node
-            dispatch(state.tr.setSelection(
-              state.tr.selection.constructor.create(state.doc, position, position + node.nodeSize)
-            ));
-
-            // Add selected class
-            dom.classList.add('selected');
-
-            // Call your function to show options
-            window.requestAnimationFrame(() => {
-              if (typeof setSelectedImage === 'function') {
-                setSelectedImage(node);
-                setShowImageOptions(true);
-              }
-            });
-          });
-
-          // Listen for selection changes to update the selected class
-          editor.on('selectionUpdate', ({ editor }) => {
-            const isSelected = editor.isActive('image', node.attrs);
-            if (isSelected) {
-              dom.classList.add('selected');
-            } else {
-              dom.classList.remove('selected');
-            }
-          });
-
-          return {
-            dom,
-            update: (updatedNode) => {
-              // Update image attributes if they've changed
-              if (updatedNode.attrs.width !== node.attrs.width) {
-                dom.style.width = updatedNode.attrs.width;
-                dom.setAttribute('data-width', updatedNode.attrs.width);
-              }
-
-              if (updatedNode.attrs.alignment !== node.attrs.alignment) {
-                dom.style.textAlign = updatedNode.attrs.alignment;
-                dom.setAttribute('data-alignment', updatedNode.attrs.alignment);
-              }
-
-              // Return true if this is still an image node
-              return updatedNode.type.name === 'image';
             },
-            selectNode: () => {
-              dom.classList.add('selected');
-            },
-            deselectNode: () => {
-              dom.classList.remove('selected');
-            }
           };
         },
+        renderHTML({ HTMLAttributes, node }) {
+          const alignment = node.attrs.alignment || 'center';
+          const width = node.attrs.width || '100%';
+
+          // Build inline style string with ALL positioning info
+          let marginLeft, marginRight;
+          if (alignment === 'center') { marginLeft = 'auto'; marginRight = 'auto'; }
+          else if (alignment === 'right') { marginLeft = 'auto'; marginRight = '0'; }
+          else { marginLeft = '0'; marginRight = 'auto'; }
+
+          const inlineStyle = `display: block; width: ${width}; height: auto; margin-left: ${marginLeft}; margin-right: ${marginRight}; border-radius: 0.75rem;`;
+
+          // Remove class from HTMLAttributes to avoid server-side interference
+          const { class: _, ...restAttrs } = HTMLAttributes;
+
+          return ['img', {
+            ...restAttrs,
+            'data-alignment': alignment,
+            'data-width': width,
+            style: inlineStyle,
+          }];
+        },
+        addNodeView() {
+          return ({ node, editor, getPos }) => {
+            // Wrapper div (editor only — not used in published HTML)
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('editor-image');
+            wrapper.style.textAlign = node.attrs.alignment || 'center';
+            wrapper.setAttribute('data-alignment', node.attrs.alignment || 'center');
+            wrapper.setAttribute('data-width', node.attrs.width || '100%');
+
+            // Image element
+            const img = document.createElement('img');
+            img.src = node.attrs.src;
+            img.alt = node.attrs.alt || '';
+            img.title = node.attrs.title || '';
+            img.style.cursor = 'pointer';
+
+            wrapper.appendChild(img);
+
+            // Click handler — create a proper NodeSelection so BubbleMenu shows
+            wrapper.addEventListener('click', (e) => {
+              e.preventDefault();
+              const pos = getPos();
+              if (pos == null) return;
+              const { state, dispatch } = editor.view;
+              const nodeSelection = NodeSelection.create(state.doc, pos);
+              dispatch(state.tr.setSelection(nodeSelection));
+              editor.view.focus();
+            });
+
+            return {
+              dom: wrapper,
+              update: (updatedNode) => {
+                if (updatedNode.type.name !== 'image') return false;
+                img.src = updatedNode.attrs.src;
+                img.alt = updatedNode.attrs.alt || '';
+                wrapper.setAttribute('data-width', updatedNode.attrs.width || '100%');
+                wrapper.style.textAlign = updatedNode.attrs.alignment || 'center';
+                wrapper.setAttribute('data-alignment', updatedNode.attrs.alignment || 'center');
+                return true;
+              },
+              selectNode: () => {
+                wrapper.classList.add('selected');
+              },
+              deselectNode: () => {
+                wrapper.classList.remove('selected');
+              },
+            };
+          };
+        },
+      }).configure({
+        inline: false,
+        allowBase64: true,
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph', 'image'],
@@ -468,13 +512,22 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
     }
   };
 
+  // Apply line spacing dynamically via DOM to bypass Tailwind prose specificity
+  useEffect(() => {
+    if (editorWrapperRef.current) {
+      const pm = editorWrapperRef.current.querySelector('.ProseMirror');
+      if (pm) {
+        pm.style.lineHeight = String(lineSpacing);
+      }
+    }
+  }, [lineSpacing]);
+
   // Add custom styling to match the published view
   const editorStyles = `
     /* Main editor container */
     .ProseMirror {
       font-family: ui-sans-serif, system-ui, sans-serif;
       color: #374151;
-      line-height: 1.6;
     }
     
     /* Images */
@@ -695,36 +748,20 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
   };
 
   const setImageWidth = (width) => {
-    if (editor && selectedImage) {
-      // Apply width change to the node
+    if (editor && editor.isActive('image')) {
       editor.chain()
         .focus()
-        .setNodeAttribute('image', 'width', width)
+        .updateAttributes('image', { width })
         .run();
-
-      // Force immediate visual update
-      updateSelectedImageStyles({ width });
-
-      // Force a re-render by updating the selected image
-      const newSelectedImage = { ...selectedImage, attrs: { ...selectedImage.attrs, width } };
-      setSelectedImage(newSelectedImage);
     }
   };
 
   const setImageAlignment = (alignment) => {
-    if (editor && selectedImage) {
-      // Apply alignment change to the node
+    if (editor && editor.isActive('image')) {
       editor.chain()
         .focus()
-        .setNodeAttribute('image', 'alignment', alignment)
+        .updateAttributes('image', { alignment })
         .run();
-
-      // Force immediate visual update
-      updateSelectedImageStyles({ alignment });
-
-      // Force a re-render by updating the selected image
-      const newSelectedImage = { ...selectedImage, attrs: { ...selectedImage.attrs, alignment } };
-      setSelectedImage(newSelectedImage);
     }
   };
 
@@ -801,22 +838,6 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
   return (
     <div className="max-w-5xl mx-auto bg-white min-h-screen">
       <style>{editorStyles}</style>
-
-      {/* Move the toolbar button to a better position */}
-      <div className="fixed bottom-10 right-8 z-50">
-        <button
-          onClick={() => setShowToolbar(!showToolbar)}
-          className="w-12 h-12 rounded-full bg-black text-white shadow-lg flex items-center justify-center hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black transition"
-          title="Add content"
-          type="button"
-          aria-expanded={showToolbar}
-          aria-controls="editor-content-toolbar"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
-      </div>
 
       {/* Featured Image Upload */}
       <div className="relative h-[300px] bg-gray-100 mb-8">
@@ -898,6 +919,49 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
             </select>
           </div>
 
+          {/* Line Spacing */}
+          <div className="w-full sm:w-auto">
+            <label htmlFor="blog-line-spacing" className="sr-only">Line Spacing</label>
+            <select
+              id="blog-line-spacing"
+              value={lineSpacing}
+              onChange={(e) => setLineSpacing(parseFloat(e.target.value))}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+            >
+              <option value={1.0}>Spacing 1.0</option>
+              <option value={1.2}>Spacing 1.2</option>
+              <option value={1.5}>Spacing 1.5</option>
+              <option value={1.6}>Spacing 1.6</option>
+              <option value={1.8}>Spacing 1.8</option>
+              <option value={2.0}>Spacing 2.0</option>
+            </select>
+          </div>
+
+          {/* Text Size — only affects new/selected text */}
+          <div className="w-full sm:w-auto">
+            <label htmlFor="blog-font-size" className="sr-only">Text Size</label>
+            <select
+              id="blog-font-size"
+              value={fontSize}
+              onChange={(e) => {
+                const size = e.target.value;
+                setFontSize(parseInt(size, 10));
+                if (editor) {
+                  editor.chain().focus().setMark('textStyle', { fontSize: `${size}px` }).run();
+                }
+              }}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+            >
+              <option value={8}>8px</option>
+              <option value={10}>10px</option>
+              <option value={12}>12px</option>
+              <option value={14}>14px</option>
+              <option value={16}>16px</option>
+              <option value={18}>18px</option>
+              <option value={20}>20px</option>
+            </select>
+          </div>
+
           <div className="flex-1">
             <label htmlFor="blog-tags" className="sr-only">Tags</label>
             <input
@@ -921,12 +985,47 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
         />
       </div>
 
+      {/* Editor Action Bar — always visible above editor */}
+      <div className="px-8 pb-2 flex flex-wrap items-center gap-2 border-b border-gray-100">
+        <button
+          onClick={handleImageUpload}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
+          type="button"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+          </svg>
+          Image
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().setHorizontalRule().run()}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
+          type="button"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+          </svg>
+          Divider
+        </button>
+        <button
+          onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
+          type="button"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+          Code
+        </button>
+      </div>
+
       {/* Main Editor */}
-      <div className="relative">
+      <div className="relative" ref={editorWrapperRef}>
         {/* Floating Format Menu */}
         {editor && (
           <BubbleMenu
             editor={editor}
+            shouldShow={({ editor }) => !editor.isActive('image')}
             tippyOptions={{ duration: 100 }}
             className="flex items-center bg-white shadow-lg rounded-md border"
           >
@@ -988,117 +1087,73 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
             shouldShow={({ editor }) => editor.isActive('image')}
             tippyOptions={{
               duration: 100,
-              placement: 'top-start',
-              offset: [0, 10],
+              placement: 'top',
+              offset: [0, 12],
               zIndex: 99,
             }}
             className="image-toolbar text-gray-700"
           >
-            <button
-              onClick={() => setImageAlignment('left')}
-              className={`flex items-center w-full text-left px-4 py-2 hover:bg-gray-50 rounded gap-2 ${isAlignmentActive('left') ? 'bg-gray-100' : ''}`}
-              type="button"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setImageAlignment('center')}
-              className={`flex items-center w-full text-left px-4 py-2 hover:bg-gray-50 rounded gap-2 ${isAlignmentActive('center') ? 'bg-gray-100' : ''}`}
-              type="button"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm2 4a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm0 4a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setImageAlignment('right')}
-              className={`flex items-center w-full text-left px-4 py-2 hover:bg-gray-50 rounded gap-2 ${isAlignmentActive('right') ? 'bg-gray-100' : ''}`}
-              type="button"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm4 4a1 1 0 011-1h8a1 1 0 110 2H8a1 1 0 01-1-1zm0 4a1 1 0 011-1h8a1 1 0 110 2H8a1 1 0 01-1-1z" clipRule="evenodd" />
-              </svg>
-            </button>
-            <div className="divider"></div>
-            <button
-              onClick={() => setImageWidth('100%')}
-              className={`flex items-center w-full text-left px-4 py-2 hover:bg-gray-50 rounded gap-2 ${isWidthActive('100%') ? 'bg-gray-100' : ''}`}
-              type="button"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setImageWidth('75%')}
-              className={`flex items-center w-full text-left px-4 py-2 hover:bg-gray-50 rounded gap-2 ${isWidthActive('75%') ? 'bg-gray-100' : ''}`}
-              type="button"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setImageWidth('50%')}
-              className={`flex items-center w-full text-left px-4 py-2 hover:bg-gray-50 rounded gap-2 ${isWidthActive('50%') ? 'bg-gray-100' : ''}`}
-              type="button"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setImageWidth('33%')}
-              className={`flex items-center w-full text-left px-4 py-2 hover:bg-gray-50 rounded gap-2 ${isWidthActive('33%') ? 'bg-gray-100' : ''}`}
-              type="button"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 6a2 2 0 110-4 2 2 0 010 4z" />
-              </svg>
-            </button>
+            {/* Alignment controls */}
+            <div className="flex items-center gap-0.5 pr-1 border-r border-gray-200 mr-1">
+              <button
+                onClick={() => setImageAlignment('left')}
+                className={`p-1.5 rounded hover:bg-gray-100 ${isAlignmentActive('left') ? 'bg-gray-200' : ''}`}
+                type="button" title="Align Left"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h8a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setImageAlignment('center')}
+                className={`p-1.5 rounded hover:bg-gray-100 ${isAlignmentActive('center') ? 'bg-gray-200' : ''}`}
+                type="button" title="Align Center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3 4a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setImageAlignment('right')}
+                className={`p-1.5 rounded hover:bg-gray-100 ${isAlignmentActive('right') ? 'bg-gray-200' : ''}`}
+                type="button" title="Align Right"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm4 4a1 1 0 011-1h8a1 1 0 110 2H8a1 1 0 01-1-1zm0 4a1 1 0 011-1h8a1 1 0 110 2H8a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Size controls with labels */}
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => setImageWidth('100%')}
+                className={`px-2 py-1 text-xs font-medium rounded hover:bg-gray-100 ${isWidthActive('100%') ? 'bg-gray-200 text-black' : 'text-gray-600'}`}
+                type="button" title="Full Width"
+              >Full</button>
+              <button
+                onClick={() => setImageWidth('75%')}
+                className={`px-2 py-1 text-xs font-medium rounded hover:bg-gray-100 ${isWidthActive('75%') ? 'bg-gray-200 text-black' : 'text-gray-600'}`}
+                type="button" title="75% Width"
+              >75%</button>
+              <button
+                onClick={() => setImageWidth('50%')}
+                className={`px-2 py-1 text-xs font-medium rounded hover:bg-gray-100 ${isWidthActive('50%') ? 'bg-gray-200 text-black' : 'text-gray-600'}`}
+                type="button" title="50% Width"
+              >50%</button>
+              <button
+                onClick={() => setImageWidth('33%')}
+                className={`px-2 py-1 text-xs font-medium rounded hover:bg-gray-100 ${isWidthActive('33%') ? 'bg-gray-200 text-black' : 'text-gray-600'}`}
+                type="button" title="33% Width"
+              >33%</button>
+            </div>
           </BubbleMenu>
         )}
 
         {/* Editor Content */}
         <EditorContent editor={editor} />
 
-        {/* Content Toolbar */}
-        {showToolbar && (
-          <div id="editor-content-toolbar" className="fixed top-24 left-4 sm:left-24 bg-white shadow-lg rounded-lg border p-2 min-w-[200px] z-50">
-            <button
-              onClick={handleImageUpload}
-              className="flex items-center w-full text-left px-4 py-2 hover:bg-gray-50 rounded gap-2"
-              type="button"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-              </svg>
-              Add Image
-            </button>
-            <button
-              onClick={() => editor?.chain().focus().setHorizontalRule().run()}
-              className="flex items-center w-full text-left px-4 py-2 hover:bg-gray-50 rounded gap-2"
-              type="button"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-              </svg>
-              Add Divider
-            </button>
-            <button
-              onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
-              className="flex items-center w-full text-left px-4 py-2 hover:bg-gray-50 rounded gap-2"
-              type="button"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-              Add Code Block
-            </button>
-          </div>
-        )}
+        {/* Old floating toolbar removed — actions now in inline toolbar above editor */}
       </div>
 
       {/* Submit Bar */}
@@ -1118,13 +1173,20 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [] }) => {
             </span>
           )}
         </div>
-        <button
-          onClick={handleSubmit}
-          className="inline-flex items-center justify-center rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black"
-          type="button"
-        >
-          Publish Draft
-        </button>
+        <div className="flex flex-col items-end gap-2">
+          <button
+            onClick={handleSubmit}
+            className="inline-flex items-center justify-center rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black"
+            type="button"
+          >
+            Publish Draft
+          </button>
+          {errorMessage && (
+            <p className="text-sm text-red-600 max-w-xs text-right" role="alert" aria-live="assertive">
+              {errorMessage}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -63,16 +63,8 @@ const BlogDetail = () => {
         setLoading(true);
         console.log('Fetching blog with identifier:', identifier);
 
-        // Modify this API call to try to get the blog by slug first
-        let blogResponse;
-        try {
-          // First, try to fetch by slug
-          blogResponse = await api.blogs.getBlogBySlug(identifier);
-        } catch (slugError) {
-          console.log('Could not find blog by slug, trying ID:', slugError);
-          // If that fails, fallback to the original ID method
-          blogResponse = await api.blogs.getBlog(identifier);
-        }
+        // Server's getBlog handler supports both ObjectId and slug lookups
+        const blogResponse = await api.blogs.getBlog(identifier);
 
         console.log('Blog data response:', blogResponse.data);
 
@@ -628,7 +620,7 @@ const BlogDetail = () => {
             prose-p:text-gray-700 prose-p:leading-relaxed prose-p:tracking-normal prose-p:font-inter
             prose-p:my-6 prose-p:first-of-type:mt-0
             prose-a:text-amber-600 prose-a:no-underline prose-a:font-medium hover:prose-a:text-amber-700
-            prose-img:rounded-xl prose-img:shadow-lg prose-img:my-8 prose-img:max-w-full prose-img:mx-auto
+            prose-img:rounded-xl prose-img:shadow-lg prose-img:my-8 prose-img:max-w-full
             prose-blockquote:border-l-amber-600 prose-blockquote:border-l-4 prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:my-6
             prose-strong:text-amber-900 prose-strong:font-semibold
             prose-code:text-gray-900 prose-code:bg-amber-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md
@@ -644,30 +636,24 @@ const BlogDetail = () => {
             margin-bottom: 1.25rem;
           }
           
-          .prose .editor-image {
-            margin: 2rem 0;
+          /* Ensure inline styles on images are respected (don't override margins) */
+          .prose img[data-alignment] {
             display: block;
-            width: 100%;
           }
           
-          .prose .editor-image img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            margin: 0 auto;
+          .prose img[data-alignment="center"] {
+            margin-left: auto !important;
+            margin-right: auto !important;
           }
           
-          .prose .editor-image[data-alignment="center"] {
-            text-align: center;
+          .prose img[data-alignment="right"] {
+            margin-left: auto !important;
+            margin-right: 0 !important;
           }
           
-          .prose .editor-image[data-alignment="right"] {
-            text-align: right;
-          }
-          
-          .prose .editor-image[data-alignment="left"] {
-            text-align: left;
+          .prose img[data-alignment="left"] {
+            margin-left: 0 !important;
+            margin-right: auto !important;
           }
           
           .prose h1, .prose h2, .prose h3 {
