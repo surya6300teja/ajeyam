@@ -193,7 +193,7 @@ exports.updateBlog = async (req, res) => {
     }
 
     // Check if user is author or admin
-    if (blog.author.id !== req.user.id && req.user.role !== 'admin') {
+    if (blog.author.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         status: 'error',
         message: 'You can only edit your own blogs'
@@ -235,7 +235,7 @@ exports.deleteBlog = async (req, res) => {
     }
 
     // Check if user is author or admin
-    if (blog.author.id !== req.user.id && req.user.role !== 'admin') {
+    if (blog.author.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         status: 'error',
         message: 'You can only delete your own blogs'

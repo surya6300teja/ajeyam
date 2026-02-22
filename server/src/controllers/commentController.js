@@ -113,7 +113,7 @@ exports.updateComment = async (req, res) => {
     }
 
     // Check if user is the author of the comment
-    if (comment.user.id !== req.user.id && req.user.role !== 'admin') {
+    if (comment.user.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         status: 'error',
         message: 'You can only edit your own comments'
@@ -152,7 +152,7 @@ exports.deleteComment = async (req, res) => {
     }
 
     // Check if user is the author of the comment or admin
-    if (comment.user.id !== req.user.id && req.user.role !== 'admin') {
+    if (comment.user.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         status: 'error',
         message: 'You can only delete your own comments'
