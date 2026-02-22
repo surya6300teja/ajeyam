@@ -65,12 +65,7 @@ const BlogDetail = () => {
 
         // Server's getBlog handler supports both ObjectId and slug lookups
         const blogResponse = await api.blogs.getBlog(identifier);
-
-        console.log('Blog data response:', blogResponse.data);
-
-        // Process the blog response data
-        let blogData = null;
-
+        let blogData = null; // Initialize blogData here
         if (blogResponse.data && blogResponse.data.data && blogResponse.data.data.blog) {
           blogData = blogResponse.data.data.blog;
         } else if (blogResponse.data && blogResponse.data.blog) {

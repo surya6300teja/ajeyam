@@ -27,22 +27,16 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle errors and refresh tokens
+// Response interceptor to handle errors
 api.interceptors.response.use(
   (response) => {
     return response;
   },
   async (error) => {
-    const originalRequest = error.config;
-    // Handle unauthorized errors (401)
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      try {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-      } catch (refreshError) {
-        return Promise.reject(refreshError);
-      }
+    // Handle unauthorized errors (401) - just clear stale token, don't redirect
+    // Redirecting here breaks public pages (blogs, book reviews, etc.)
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
     }
     return Promise.reject(error);
   }
