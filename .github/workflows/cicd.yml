@@ -65,8 +65,7 @@ jobs:
           docker-compose pull
           
           echo "Stopping and removing old containers, and starting new ones..."
-          # Using --remove-orphans to clean up old backend/frontend ports if needed
-          docker-compose up -d --build --remove-orphans
+          docker-compose up -d --build --force-recreate --remove-orphans
           
           echo "Cleaning up dangling images..."
           docker image prune -f
