@@ -153,6 +153,7 @@ const BlogDetail = () => {
   }, []);
 
   const stripHtml = (html) => {
+    if (!html) return '';
     return html.replace(/<[^>]+>/g, '');
   };
   const handleLike = async () => {
@@ -901,7 +902,7 @@ const BlogDetail = () => {
                       {relatedBlog.title}
                     </h4>
                     <p className="text-gray-600 line-clamp-2 mb-3 leading-relaxed">
-                      {relatedBlog.excerpt || stripHtml(relatedBlog.content).slice(0, 150)}...
+                      {relatedBlog.excerpt || relatedBlog.summary || (relatedBlog.content ? stripHtml(relatedBlog.content).slice(0, 150) : '')}...
                     </p>
                     <div className="text-sm text-gray-500 flex items-center space-x-2">
                       <span>{new Date(relatedBlog.createdAt).toLocaleDateString('en-US', {

@@ -201,8 +201,8 @@ const AdminDashboard = () => {
               <button
                 onClick={() => setActiveTab('overview')}
                 className={`${activeTab === 'overview'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
               >
                 Overview
@@ -210,8 +210,8 @@ const AdminDashboard = () => {
               <button
                 onClick={() => setActiveTab('pending-blogs')}
                 className={`${activeTab === 'pending-blogs'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
               >
                 Pending Blogs
@@ -219,8 +219,8 @@ const AdminDashboard = () => {
               <button
                 onClick={() => setActiveTab('published-blogs')}
                 className={`${activeTab === 'published-blogs'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
               >
                 Published Blogs
@@ -228,8 +228,8 @@ const AdminDashboard = () => {
               <button
                 onClick={() => setActiveTab('users')}
                 className={`${activeTab === 'users'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
               >
                 User Management
@@ -461,7 +461,7 @@ const AdminDashboard = () => {
                           {blog.views || 0}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {blog.likes.length || 0}
+                          {blog.likesCount || 0}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <Link
@@ -525,8 +525,8 @@ const AdminDashboard = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.active
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
                             }`}>
                             {user.active ? 'Active' : 'Inactive'}
                           </span>
