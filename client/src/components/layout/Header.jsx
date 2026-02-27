@@ -53,7 +53,26 @@ const Header = () => {
         <>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="relative flex h-16 items-center justify-between">
-              <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
+              {/* Mobile right side: avatar when logged in, hamburger toggle */}
+              <div className="absolute inset-y-0 right-0 flex items-center gap-1 sm:hidden">
+                {/* Show avatar + sign out inline on mobile when authenticated */}
+                {isAuthenticated && (
+                  <>
+                    <Link to="/profile" className="flex items-center">
+                      {currentUser?.avatar ? (
+                        <img
+                          src={currentUser.avatar}
+                          alt={currentUser.name || 'Profile'}
+                          className="w-8 h-8 rounded-full object-cover border-2 border-primary"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold border-2 border-primary text-sm">
+                          {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : '?'}
+                        </div>
+                      )}
+                    </Link>
+                  </>
+                )}
                 <Disclosure.Button className="relative inline-flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900">
                   <span className="sr-only">Open main menu</span>
                   {open ? (
@@ -66,7 +85,7 @@ const Header = () => {
 
               {/* Logo and Navigation */}
               <div className="flex flex-1 items-center justify-between sm:items-stretch">
-                <div className="flex flex-shrink-0 items-center ml-8 sm:ml-0">
+                <div className="flex flex-shrink-0 items-center sm:ml-0">
                   <Link to="/" className="flex items-center group">
                     <img
                       src="/logo.png"
