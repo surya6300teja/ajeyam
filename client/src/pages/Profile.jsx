@@ -4,9 +4,11 @@ import ProfileLikedBlogs from '../components/profile/ProfileLikedBlogs';
 import ProfileSavedBlogs from '../components/profile/ProfileSavedBlogs';
 import ProfileFollowingAuthors from '../components/profile/ProfileFollowingAuthors';
 import ProfileChangePassword from '../components/profile/ProfileChangePassword';
+import ProfileMyBlogs from '../components/profile/ProfileMyBlogs';
 import { useAuth } from '../context/AuthContext';
 
 const TABS = [
+  'My Blogs',
   'Liked Blogs',
   'Saved Blogs',
   'Following Authors',
@@ -18,7 +20,7 @@ const BG_COLOR = '#FAF7F3';
 const TEXT_COLOR = '#111';
 
 const Profile = () => {
-  const [activeTab, setActiveTab] = useState('Liked Blogs');
+  const [activeTab, setActiveTab] = useState('My Blogs');
   const { currentUser } = useAuth();
 
   return (
@@ -82,19 +84,19 @@ const Profile = () => {
                 style={
                   activeTab === tab
                     ? {
-                        background: PRIMARY_COLOR,
-                        color: '#fff',
-                        borderColor: PRIMARY_COLOR,
-                        boxShadow: '0 2px 8px 0 rgba(153,46,1,0.10)',
-                        borderRadius: 0,
-                        transform: 'scale(1.05)',
-                      }
+                      background: PRIMARY_COLOR,
+                      color: '#fff',
+                      borderColor: PRIMARY_COLOR,
+                      boxShadow: '0 2px 8px 0 rgba(153,46,1,0.10)',
+                      borderRadius: 0,
+                      transform: 'scale(1.05)',
+                    }
                     : {
-                        background: '#fff',
-                        color: PRIMARY_COLOR,
-                        borderColor: PRIMARY_COLOR + '22',
-                        borderRadius: 0,
-                      }
+                      background: '#fff',
+                      color: PRIMARY_COLOR,
+                      borderColor: PRIMARY_COLOR + '22',
+                      borderRadius: 0,
+                    }
                 }
                 onClick={() => setActiveTab(tab)}
               >
@@ -106,6 +108,7 @@ const Profile = () => {
         {/* Tab Content */}
         <div className="mt-4 sm:mt-6">
           <div className="rounded-2xl bg-white shadow-lg border border-[#f0e9e0] p-3 sm:p-8" style={{ color: TEXT_COLOR }}>
+            {activeTab === 'My Blogs' && <ProfileMyBlogs primaryColor={PRIMARY_COLOR} textColor={TEXT_COLOR} />}
             {activeTab === 'Overview' && <ProfileOverview primaryColor={PRIMARY_COLOR} textColor={TEXT_COLOR} />}
             {activeTab === 'Liked Blogs' && <ProfileLikedBlogs primaryColor={PRIMARY_COLOR} textColor={TEXT_COLOR} />}
             {activeTab === 'Saved Blogs' && <ProfileSavedBlogs primaryColor={PRIMARY_COLOR} textColor={TEXT_COLOR} />}

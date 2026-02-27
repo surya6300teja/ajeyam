@@ -140,7 +140,7 @@ const ImageOptions = ({ editor, node, setImageWidth, setImageAlignment }) => (
 
 const DRAFT_STORAGE_KEY = 'blog_draft';
 
-const BlogEditor = ({ initialContent = '', onSave, categories = [], errorMessage = '' }) => {
+const BlogEditor = ({ initialContent = '', initialData = null, onSave, categories = [], errorMessage = '' }) => {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState('');
@@ -356,15 +356,23 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [], errorMessage
       }
     },
     onCreate: () => {
-      // When the editor is ready, set loading to false and attempt to load draft content
+      // When the editor is ready, set loading to false
       setTimeout(() => setEditorLoading(false), 800);
-      const draft = safeParse(localStorage.getItem(DRAFT_STORAGE_KEY));
-      if (draft?.content) {
+
+      if (initialData?.content) {
+        // Edit mode: populate from the existing blog (skip draft)
         try {
-          // Prefer HTML to keep formatting identical
-          editor.commands.setContent(draft.content, false);
-        } catch (e) {
-          // Ignore setContent error
+          setTimeout(() => {
+            editor.commands.setContent(initialData.content, false);
+          }, 50);
+        } catch (e) { /* ignore */ }
+      } else {
+        // Create mode: restore from localStorage draft
+        const draft = safeParse(localStorage.getItem(DRAFT_STORAGE_KEY));
+        if (draft?.content) {
+          try {
+            editor.commands.setContent(draft.content, false);
+          } catch (e) { /* ignore */ }
         }
       }
     }
@@ -414,16 +422,27 @@ const BlogEditor = ({ initialContent = '', onSave, categories = [], errorMessage
     saveTimerRef.current = setTimeout(saveDraft, 800);
   };
 
-  // Load basic fields from draft on mount
+  // Load basic fields from initialData (edit mode) or draft (create mode)
   useEffect(() => {
-    const draft = safeParse(localStorage.getItem(DRAFT_STORAGE_KEY));
-    if (draft) {
-      if (draft.title) setTitle(draft.title);
-      if (draft.category) setCategory(draft.category);
-      if (draft.tags) setTags(draft.tags);
-      if (draft.featuredImage) setFeaturedImage(draft.featuredImage);
-      if (draft.excerpt) setExcerpt(draft.excerpt);
+    if (initialData) {
+      // Edit mode: use the existing blog's fields
+      if (initialData.title) setTitle(initialData.title);
+      if (initialData.category) setCategory(initialData.category);
+      if (initialData.tags) setTags(initialData.tags);
+      if (initialData.featuredImage) setFeaturedImage(initialData.featuredImage);
+      if (initialData.excerpt) setExcerpt(initialData.excerpt);
+    } else {
+      // Create mode: restore from localStorage draft
+      const draft = safeParse(localStorage.getItem(DRAFT_STORAGE_KEY));
+      if (draft) {
+        if (draft.title) setTitle(draft.title);
+        if (draft.category) setCategory(draft.category);
+        if (draft.tags) setTags(draft.tags);
+        if (draft.featuredImage) setFeaturedImage(draft.featuredImage);
+        if (draft.excerpt) setExcerpt(draft.excerpt);
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save whenever metadata changes

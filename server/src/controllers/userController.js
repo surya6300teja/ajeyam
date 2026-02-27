@@ -13,7 +13,7 @@ const signToken = (id) => {
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
-    
+
     res.status(200).json({
       status: 'success',
       results: users.length,
@@ -31,20 +31,20 @@ exports.getAllUsers = async (req, res) => {
 exports.getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         status: 'error',
         message: 'User not found'
       });
     }
-    
+
     // Get count of blogs by this user
     const blogCount = await Blog.countDocuments({ author: req.params.id });
-    
+
     res.status(200).json({
       status: 'success',
-      data: { 
+      data: {
         user,
         blogCount
       }
@@ -67,7 +67,7 @@ exports.updateMe = async (req, res) => {
         message: 'This route is not for password updates. Please use /update-password.'
       });
     }
-    
+
     // Filter out fields that are not allowed to be updated
     const allowedFields = ['name', 'bio', 'avatar'];
     const filteredBody = {};
@@ -76,7 +76,7 @@ exports.updateMe = async (req, res) => {
         filteredBody[field] = req.body[field];
       }
     });
-    
+
     // Update user document
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
@@ -86,7 +86,7 @@ exports.updateMe = async (req, res) => {
         runValidators: true
       }
     );
-    
+
     res.status(200).json({
       status: 'success',
       data: { user: updatedUser }
@@ -103,7 +103,7 @@ exports.updateMe = async (req, res) => {
 exports.updatePassword = async (req, res) => {
   try {
     const { currentPassword, password, passwordConfirm } = req.body;
-    
+
     // Check if all fields exist
     if (!currentPassword || !password || !passwordConfirm) {
       return res.status(400).json({
@@ -111,10 +111,10 @@ exports.updatePassword = async (req, res) => {
         message: 'Please provide current password, new password and password confirmation'
       });
     }
-    
+
     // Get user with password
     const user = await User.findById(req.user.id).select('+password');
-    
+
     // Check if current password is correct
     if (!(await user.correctPassword(currentPassword, user.password))) {
       return res.status(401).json({
@@ -122,15 +122,15 @@ exports.updatePassword = async (req, res) => {
         message: 'Your current password is incorrect'
       });
     }
-    
+
     // Update password
     user.password = password;
     user.passwordConfirm = passwordConfirm;
     await user.save();
-    
+
     // Create new token
     const token = signToken(user._id);
-    
+
     res.status(200).json({
       status: 'success',
       token,
@@ -148,7 +148,7 @@ exports.updatePassword = async (req, res) => {
 exports.deleteMe = async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.user.id, { active: false });
-    
+
     res.status(204).json({
       status: 'success',
       data: null
@@ -166,18 +166,18 @@ exports.updateUser = async (req, res) => {
   try {
     // Check if user exists
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         status: 'error',
         message: 'User not found'
       });
     }
-    
+
     // Filter out password fields
     delete req.body.password;
     delete req.body.passwordConfirm;
-    
+
     // Update user document
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
@@ -187,7 +187,7 @@ exports.updateUser = async (req, res) => {
         runValidators: true
       }
     );
-    
+
     res.status(200).json({
       status: 'success',
       data: { user: updatedUser }
@@ -204,26 +204,26 @@ exports.updateUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         status: 'error',
         message: 'User not found'
       });
     }
-    
+
     // Check if user has blogs
     const userBlogsCount = await Blog.countDocuments({ author: req.params.id });
-    
+
     if (userBlogsCount > 0) {
       return res.status(400).json({
         status: 'error',
         message: `User has ${userBlogsCount} blogs. Please reassign or delete these blogs before deleting the user.`
       });
     }
-    
+
     await User.findByIdAndDelete(req.params.id);
-    
+
     res.status(204).json({
       status: 'success',
       data: null
@@ -239,36 +239,39 @@ exports.deleteUser = async (req, res) => {
 // Get user blogs
 exports.getUserBlogs = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    
+    const user = await User.findById(req.params.id).lean().select('name avatar');
+
     if (!user) {
       return res.status(404).json({
         status: 'error',
         message: 'User not found'
       });
     }
-    
+
     // Pagination
     const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
+    const limit = parseInt(req.query.limit, 10) || 50;
     const skip = (page - 1) * limit;
-    
+
     // Query blogs by user
     const query = { author: req.params.id };
-    
+
     // If not admin or not the user, only show published blogs
     if (!req.user || (req.user.role !== 'admin' && req.user.id !== req.params.id)) {
       query.status = 'published';
     }
-    
+
     const blogs = await Blog.find(query)
-      .sort({ publishedAt: -1, createdAt: -1 })
+      .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
-    
+      .limit(limit)
+      .lean()
+      .select('-content -likes')
+      .populate('category', 'name slug');
+
     // Get total count for pagination
     const total = await Blog.countDocuments(query);
-    
+
     res.status(200).json({
       status: 'success',
       results: blogs.length,
@@ -280,9 +283,9 @@ exports.getUserBlogs = async (req, res) => {
         hasNextPage: page < Math.ceil(total / limit),
         hasPrevPage: page > 1
       },
-      data: { 
+      data: {
         user,
-        blogs 
+        blogs
       }
     });
   } catch (error) {
@@ -297,14 +300,14 @@ exports.getUserBlogs = async (req, res) => {
 exports.blockUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         status: 'error',
         message: 'User not found'
       });
     }
-    
+
     // Prevent blocking admin users
     if (user.role === 'admin') {
       return res.status(403).json({
@@ -312,7 +315,7 @@ exports.blockUser = async (req, res) => {
         message: 'Admin users cannot be blocked'
       });
     }
-    
+
     // Prevent blocking already blocked users
     if (!user.active) {
       return res.status(400).json({
@@ -320,7 +323,7 @@ exports.blockUser = async (req, res) => {
         message: 'User is already blocked'
       });
     }
-    
+
     // Update user's active status to false
     const blockedUser = await User.findByIdAndUpdate(
       req.params.id,
@@ -330,7 +333,7 @@ exports.blockUser = async (req, res) => {
         runValidators: true
       }
     );
-    
+
     res.status(200).json({
       status: 'success',
       data: { user: blockedUser }
@@ -347,14 +350,14 @@ exports.blockUser = async (req, res) => {
 exports.activateUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         status: 'error',
         message: 'User not found'
       });
     }
-    
+
     // Prevent activating already active users
     if (user.active) {
       return res.status(400).json({
@@ -362,7 +365,7 @@ exports.activateUser = async (req, res) => {
         message: 'User is already active'
       });
     }
-    
+
     // Update user's active status to true
     const activatedUser = await User.findByIdAndUpdate(
       req.params.id,
@@ -372,7 +375,7 @@ exports.activateUser = async (req, res) => {
         runValidators: true
       }
     );
-    
+
     res.status(200).json({
       status: 'success',
       data: { user: activatedUser }
