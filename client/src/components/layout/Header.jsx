@@ -104,8 +104,8 @@ const Header = () => {
                   ))}
                 </div>
 
-                {/* Auth Buttons */}
-                <div className="flex items-center space-x-4">
+                {/* Auth Buttons — hidden on mobile, shown on sm+ */}
+                <div className="hidden sm:flex items-center space-x-4">
                   {isAuthenticated ? (
                     <>
                       {isAdmin && (
@@ -158,7 +158,7 @@ const Header = () => {
             </div>
           </div>
 
-          {/* Mobile Navigation */}
+          {/* Mobile Navigation Panel */}
           <Disclosure.Panel className="sm:hidden">
             <div className="space-y-1 pb-3 pt-2">
               {navigation.map((item) => (
@@ -191,6 +191,31 @@ const Header = () => {
                   Admin
                 </Disclosure.Button>
               )}
+              {/* Mobile Auth */}
+              <div className="pt-3 pb-1 border-t border-gray-200 px-3">
+                {isAuthenticated ? (
+                  <div className="flex items-center gap-3">
+                    <Link to="/profile" className="flex items-center gap-2">
+                      {currentUser?.avatar ? (
+                        <img src={currentUser.avatar} alt={currentUser.name} className="w-8 h-8 rounded-full object-cover border-2 border-primary" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold border-2 border-primary text-sm">
+                          {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : '?'}
+                        </div>
+                      )}
+                      <span className="text-sm font-medium text-gray-700">{currentUser?.name}</span>
+                    </Link>
+                    <button onClick={handleLogout} className="ml-auto text-sm text-gray-500 hover:text-gray-800">
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900">Sign In</Link>
+                    <Link to="/signup" className="bg-black text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-gray-800">Get Started</Link>
+                  </div>
+                )}
+              </div>
             </div>
           </Disclosure.Panel>
 

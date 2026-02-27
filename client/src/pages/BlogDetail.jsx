@@ -535,7 +535,7 @@ const BlogDetail = () => {
         </div>
 
         {/* Article Title with gradient */}
-        <h1 className="text-[2.5rem] font-serif leading-tight tracking-tight mb-6 font-bold bg-gradient-to-r from-amber-900 to-orange-800 bg-clip-text text-transparent">
+        <h1 className="text-3xl sm:text-[2.5rem] font-serif leading-tight tracking-tight mb-6 font-bold bg-gradient-to-r from-amber-900 to-orange-800 bg-clip-text text-transparent">
           {sanitizedBlog.title}
         </h1>
 
@@ -544,13 +544,13 @@ const BlogDetail = () => {
           {sanitizedBlog.subtitle || 'A deep dive into the subject matter'}
         </h2> */}
 
-        {/* Author and Meta Info with enhanced styling */}
-        <div className="flex items-center justify-between mb-12 border-b border-amber-100 pb-8">
+        {/* Author and Meta Info */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-12 border-b border-amber-100 pb-8">
           <div className="flex items-center">
             <img
               src={sanitizedBlog.author?.avatar || 'https://source.unsplash.com/random/40x40'}
               alt={sanitizedBlog.author?.name}
-              className="w-12 h-12 rounded-full mr-3 ring-2 ring-amber-50 shadow-sm"
+              className="w-12 h-12 rounded-full mr-3 ring-2 ring-amber-50 shadow-sm flex-shrink-0"
             />
             <div>
               <div className="flex items-center gap-2">
@@ -579,8 +579,8 @@ const BlogDetail = () => {
             </div>
           </div>
 
-          {/* Share Actions with enhanced styling */}
-          <div className="flex items-center space-x-2">
+          {/* Share Actions */}
+          <div className="flex items-center gap-1 flex-wrap">
             <button
               onClick={() => handleShare('copy')}
               className="p-2 hover:bg-amber-50 rounded-full transition-colors tooltip relative"
@@ -628,6 +628,7 @@ const BlogDetail = () => {
             </button>
           </div>
         </div>
+
 
         {/* Cover Image with enhanced styling */}
         {sanitizedBlog.coverImage && (
