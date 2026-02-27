@@ -26,7 +26,8 @@ const About = () => {
                     <h2 className="text-3xl font-serif font-bold text-amber-900 mb-6">What is Ajeyam?</h2>
                     <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed space-y-4">
                         <p>
-                            <strong className="text-amber-900">Ajeyam</strong> (meaning "invincible" in Sanskrit) is a digital platform
+                            <strong className="text-amber-900">Ajeyam</strong> (अजेयम्) means <strong className="text-amber-900">Ananta Vijayam</strong> — the eternal conch of Yudhishthira from the Mahabharata,
+                            symbolising invincibility and undying victory. True to its name, Ajeyam is a digital platform
                             dedicated to exploring and celebrating the rich history, heritage, and culture of the Indian subcontinent.
                             We believe that understanding our past is key to shaping a better future.
                         </p>

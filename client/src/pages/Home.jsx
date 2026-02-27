@@ -121,38 +121,38 @@ const Home = () => {
 
   return (
     <div className="bg-[#FBF7F4]">
-      {/* Hero Section - Reimagined */}
-      <section className="min-h-screen relative overflow-hidden flex flex-col justify-center">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden flex flex-col justify-center">
         {/* Decorative elements */}
         <div className="absolute inset-0 bg-[url('/patterns/kolam.svg')] opacity-5 pattern-rotate"></div>
-        <div className="container mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-10 sm:pb-20 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="mb-6 sm:mb-8">
-              <span className="text-primary font-devanagari text-lg sm:text-2xl">||राष्ट्राय स्वाहा||</span>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32 pb-12 sm:pb-16 relative z-10">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="mb-4 sm:mb-6">
+              <span className="text-primary font-devanagari text-base sm:text-xl">||राष्ट्राय स्वाहा||</span>
             </div>
-            <h1 className="text-2xl sm:text-4xl md:text-7xl lg:text-6xl font-serif mb-6 sm:mb-8 bg-gradient-to-r from-amber-900 to-orange-800 bg-clip-text text-transparent leading-tight">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-serif mb-4 sm:mb-6 bg-gradient-to-r from-amber-900 to-orange-800 bg-clip-text text-transparent leading-tight">
               CIVILIZATION. INVINCIBILITY. RESURGENCE.
             </h1>
-            <p className="text-base sm:text-xl md:text-2xl text-gray-700 mb-8 sm:mb-12 font-serif leading-relaxed">
+            <p className="text-sm sm:text-lg md:text-xl text-gray-700 mb-6 sm:mb-10 font-serif leading-relaxed px-2 sm:px-0">
               Where forgotten stories emerge from the depths of time,
               weaving together the tapestry of our heritage.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 justify-center items-center">
               <Link
                 to="/blogs"
-                className="group relative rounded-full px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg overflow-hidden"
+                className="group relative rounded-full px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base overflow-hidden border border-amber-900"
               >
                 <span className="relative z-10 text-amber-900 font-medium group-hover:text-white transition-colors duration-100">
-                  Begin Your Journey:
+                  Begin Your Journey
                 </span>
                 <div className="absolute inset-0 bg-amber-900 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
               </Link>
-              <span className="text-gray-400">or</span>
+              <span className="text-gray-400 hidden sm:inline">or</span>
               <Link
                 to="/create-blog"
-                className="text-gray-600 hover:text-amber-900 transition-colors duration-300 text-base sm:text-lg"
+                className="text-gray-600 hover:text-amber-900 transition-colors duration-300 text-sm sm:text-base"
               >
-                Reveal Untold Stories→
+                Reveal Untold Stories →
               </Link>
             </div>
           </div>
@@ -160,10 +160,10 @@ const Home = () => {
       </section>
 
       {/* Our Values Section */}
-      <section className="py-12 sm:py-16 bg-gradient-to-b from-[#FBF7F4] to-transparent">
+      <section className="py-10 sm:py-14 bg-gradient-to-b from-[#FBF7F4] to-transparent">
         <div className="container mx-auto px-4 sm:px-6">
           <h2 className="text-2xl sm:text-3xl font-serif text-amber-900 mb-10 sm:mb-12 text-center">Our Values</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
             <div className="bg-white rounded-xl p-6 shadow-sm border border-amber-100 hover:shadow-md transition-shadow duration-300">
               <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -202,9 +202,9 @@ const Home = () => {
       </section>
 
       {/* Featured Stories Section - Clean & Minimal */}
-      <section className="py-12 sm:py-20">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between mb-10 sm:mb-16 gap-4 sm:gap-0">
+      <section className="py-10 sm:py-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between mb-8 sm:mb-12 gap-3 sm:gap-0">
             <h2 className="text-2xl sm:text-3xl font-serif text-amber-900">Featured Chronicles</h2>
             <Link to="/blogs" className="text-amber-900 hover:text-amber-700 transition-colors text-base sm:text-lg">
               View All →
@@ -237,7 +237,7 @@ const Home = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {featuredBlogs.map((blog) => (
                 <article
                   key={blog._id || `blog-${Math.random()}`}
@@ -294,9 +294,9 @@ const Home = () => {
       </section>
 
       {/* Categories Section - Reimagined as Timeline */}
-      <section className="py-12 sm:py-20 bg-gradient-to-b from-transparent to-amber-50">
-        <div className="container mx-auto px-4 sm:px-6">
-          <h2 className="text-2xl sm:text-3xl font-serif text-amber-900 mb-10 sm:mb-16 text-center">Journey Through Time</h2>
+      <section className="py-10 sm:py-16 bg-gradient-to-b from-transparent to-amber-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl sm:text-3xl font-serif text-amber-900 mb-8 sm:mb-12 text-center">Journey Through Time</h2>
           {loading ? (
             <div className="flex justify-center py-8 sm:py-10">
               <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -310,7 +310,7 @@ const Home = () => {
               <p className="text-gray-500">No categories available at the moment.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 sm:gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
               {categories.map((category) => (
                 <button
                   key={category._id || `category-${Math.random()}`}
@@ -339,7 +339,7 @@ const Home = () => {
       </section>
 
       {/* Call to Action - Reimagined */}
-      <section className="py-12 sm:py-20 bg-amber-900 text-white relative overflow-hidden">
+      <section className="py-10 sm:py-16 bg-amber-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/patterns/mandala.svg')] opacity-10"></div>
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
