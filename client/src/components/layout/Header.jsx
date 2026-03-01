@@ -90,7 +90,7 @@ const Header = () => {
                     <img
                       src="/logo.png"
                       alt="Ajeyam Logo"
-                      className="h-10 w-10 sm:h-12 sm:w-12 mr-3 transition-transform duration-300 ease-out group-hover:scale-110 group-hover:drop-shadow-sm will-change-transform"
+                      className="h-12 w-12 sm:h-14 sm:w-14 mr-3 object-contain transition-transform duration-300 ease-out group-hover:scale-110 group-hover:drop-shadow-sm will-change-transform"
                       style={{ transform: `rotate(${scrollY * 0.15}deg)` }}
                     />
                     <span className="text-2xl font-serif font-bold text-gray-900 transition-colors group-hover:text-gray-700">
