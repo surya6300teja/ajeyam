@@ -168,6 +168,26 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleToggleFeatured = async (id) => {
+    try {
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const response = await api.axios.patch(`/blogs/${id}/featured`, {}, { headers });
+      const updatedBlog = response.data.data.blog;
+
+      setPublishedBlogs(prevBlogs =>
+        prevBlogs.map(blog =>
+          blog._id === id ? { ...blog, isFeatured: updatedBlog.isFeatured } : blog
+        )
+      );
+    } catch (error) {
+      console.error('Error toggling featured:', error);
+    }
+  };
+
   const handleDeleteBlog = async (id) => {
     try {
       const headers = {
@@ -439,6 +459,7 @@ const AdminDashboard = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Views</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Likes</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Featured</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -463,6 +484,15 @@ const AdminDashboard = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {blog.likesCount || 0}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <button
+                            onClick={() => handleToggleFeatured(blog._id)}
+                            className={`text-lg ${blog.isFeatured ? 'text-amber-500' : 'text-gray-300 hover:text-amber-400'} transition-colors`}
+                            title={blog.isFeatured ? 'Remove from featured' : 'Mark as featured'}
+                          >
+                            {blog.isFeatured ? '★' : '☆'}
+                          </button>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <Link
                             to={`/blogs/${blog._id}`}
@@ -471,7 +501,7 @@ const AdminDashboard = () => {
                             View
                           </Link>
                           <Link
-                            to={`/edit-blog/${blog._id}`}
+                            to={`/create-blog?edit=${blog._id}`}
                             className="text-blue-600 hover:text-blue-900 mr-3"
                           >
                             Edit

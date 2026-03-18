@@ -8,7 +8,8 @@ export default {
     extend: {
       fontFamily: {
         devanagari: ['Sanskrit Text', 'Arial', 'sans-serif'],
-        serif: ['Crimson Pro', 'serif'],
+        serif: ['Crimson Pro', 'Merriweather', 'serif'],
+        'sans': ['Inter', 'sans-serif'],
       },
       colors: {
         primary: {
@@ -29,10 +30,6 @@ export default {
           light: '#F9F5ED',
         }
       },
-      fontFamily: {
-        'serif': ['Merriweather', 'serif'],
-        'sans': ['Inter', 'sans-serif'],
-      },
       boxShadow: {
         'blog-card': '0 4px 6px rgba(0, 0, 0, 0.1)',
         'hover': '0 10px 15px rgba(0, 0, 0, 0.1)',
@@ -40,4 +37,4 @@ export default {
     },
   },
   plugins: [],
-} 
+}

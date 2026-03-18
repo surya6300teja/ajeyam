@@ -162,7 +162,7 @@ const Login = () => {
             />
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account? {' '}
               <Link to="/signup" className="text-primary hover:text-primary-dark font-medium">

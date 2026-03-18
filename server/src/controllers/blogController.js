@@ -457,6 +457,33 @@ exports.changeBlogStatus = async (req, res) => {
   }
 };
 
+// Toggle featured status (admin only)
+exports.toggleFeatured = async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+
+    if (!blog) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Blog not found'
+      });
+    }
+
+    blog.isFeatured = !blog.isFeatured;
+    await blog.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      status: 'success',
+      data: { blog }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
 // Debug route to list all featured blogs directly
 exports.debugFeaturedBlogs = async (req, res) => {
   try {

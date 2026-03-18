@@ -116,4 +116,77 @@ router.get('/share/:blogId', (req, res) => {
   res.send(html);
 });
 
+// Server-rendered OG tags for social media crawlers (called by nginx)
+router.get('/og/blogs/:identifier', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const Blog = require('../models/Blog');
+    const { identifier } = req.params;
+
+    const query = mongoose.Types.ObjectId.isValid(identifier)
+      ? { _id: identifier }
+      : { slug: identifier };
+
+    const blog = await Blog.findOne(query)
+      .populate('author', 'name')
+      .populate('category', 'name')
+      .select('title summary content coverImage author category tags createdAt slug')
+      .lean();
+
+    if (!blog) {
+      return res.redirect(302, `https://ajeyam.in/blogs/${identifier}`);
+    }
+
+    const frontendUrl = 'https://ajeyam.in';
+    const blogUrl = `${frontendUrl}/blogs/${blog.slug || blog._id}`;
+
+    // Build absolute image URL
+    let imageUrl = `${frontendUrl}/og-image.jpg`;
+    if (blog.coverImage) {
+      if (blog.coverImage.startsWith('http')) {
+        imageUrl = blog.coverImage;
+      } else {
+        imageUrl = `https://api.ajeyam.in${blog.coverImage.startsWith('/') ? '' : '/'}${blog.coverImage}`;
+      }
+    }
+
+    // Strip HTML for description
+    const description = (blog.summary || (blog.content || '').replace(/<[^>]*>/g, '')).substring(0, 200);
+    const safeTitle = (blog.title || 'Ajeyam.in Blog').replace(/"/g, '&quot;');
+    const safeDesc = description.replace(/"/g, '&quot;');
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${safeTitle} | Ajeyam.in</title>
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="${blogUrl}" />
+  <meta property="og:title" content="${safeTitle}" />
+  <meta property="og:description" content="${safeDesc}" />
+  <meta property="og:image" content="${imageUrl}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="Ajeyam.in" />
+  <meta property="article:published_time" content="${blog.createdAt}" />
+  ${blog.author?.name ? `<meta property="article:author" content="${blog.author.name}" />` : ''}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@ajeyam_speaks" />
+  <meta name="twitter:title" content="${safeTitle}" />
+  <meta name="twitter:description" content="${safeDesc}" />
+  <meta name="twitter:image" content="${imageUrl}" />
+  <meta http-equiv="refresh" content="0;url=${blogUrl}" />
+</head>
+<body><p>Redirecting...</p></body>
+</html>`;
+
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(html);
+  } catch (error) {
+    console.error('OG route error:', error);
+    res.redirect(302, `https://ajeyam.in/blogs/${req.params.identifier}`);
+  }
+});
+
 module.exports = router; 

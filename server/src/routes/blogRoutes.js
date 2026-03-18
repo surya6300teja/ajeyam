@@ -9,9 +9,10 @@ const { protect, restrictTo } = require('../middleware/authMiddleware');
 // Admin-only routes
 // =======================
 router.get('/pending',protect, restrictTo('admin'), blogController.getPendingBlogs);
-router.put('/:id/approve', blogController.approveBlog);
+router.put('/:id/approve', protect, restrictTo('admin'), blogController.approveBlog);
 router.put('/:id/reject', protect, restrictTo('admin'), blogController.rejectBlog);
 router.patch('/:id/status', protect, restrictTo('admin'), blogController.changeBlogStatus);
+router.patch('/:id/featured', protect, restrictTo('admin'), blogController.toggleFeatured);
 
 // =======================
 // Nested Comment Routes
