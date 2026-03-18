@@ -250,48 +250,9 @@ const BlogDetail = () => {
 
   const getShareUrl = () => {
     if (!blog) return window.location.href;
-
-    try {
-      // Get the API base URL from environment or use a default
-      const origin = window.location.origin;
-      const apiBaseUrl = import.meta.env.VITE_API_URL || `${origin}/api/v1`;
-
-      // Create the base sharing URL with the blog ID
-      const serverShareUrl = `${apiBaseUrl}/utils/share/${blog._id || identifier}`;
-
-      // Create URL object for proper parameter encoding
-      const url = new URL(serverShareUrl);
-
-      // Add title (keep it short)
-      const title = blog.title && blog.title.length > 100
-        ? blog.title.substring(0, 100)
-        : blog.title || 'Ajeyam.in Blog';
-      url.searchParams.append('title', title);
-
-      // Add a shorter description
-      const description = blog.summary
-        ? blog.summary.substring(0, 150)
-        : 'Read this fascinating article on Ajeyam.in';
-      url.searchParams.append('description', description);
-
-      // Simplify image URL handling - just use the cover image if it's absolute
-      // or a default image to avoid encoding issues
-      let imageUrl = blog.coverImage;
-      if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
-        // Use the absolute URL directly
-        url.searchParams.append('image', imageUrl);
-      } else {
-        // Use a default image from the site
-        url.searchParams.append('image', `${origin}/og-image.jpg`);
-      }
-
-      console.log("Generated share URL:", url.toString());
-      return url.toString();
-    } catch (error) {
-      console.error('Error generating share URL:', error);
-      // If anything fails, just return the direct URL
-      return window.location.href;
-    }
+    const apiBaseUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api/v1`;
+    // Use slug for a cleaner URL, fall back to _id
+    return `${apiBaseUrl}/utils/share/${blog.slug || blog._id || identifier}`;
   };
 
   // Save/Unsave blog handler

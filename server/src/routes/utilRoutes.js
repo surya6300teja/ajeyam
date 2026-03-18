@@ -51,9 +51,25 @@ twitter:image: ${imageUrl}</pre>
 // Share endpoint — serves OG meta tags for crawlers, redirects browsers to frontend
 router.get('/share/:blogId', async (req, res) => {
   const { blogId } = req.params;
-  const { title, image, description } = req.query;
-  const frontendUrl = process.env.FRONTEND_URL || 'https://ajeyam.in';
-  const blogUrl = `${frontendUrl}/blogs/${blogId}`;
+  const frontendUrl = 'https://ajeyam.in';
+  const apiUrl = 'https://api.ajeyam.in';
+
+  // Fetch blog from DB to get all metadata
+  let blog = null;
+  try {
+    const mongoose = require('mongoose');
+    const Blog = require('../models/Blog');
+    const query = mongoose.Types.ObjectId.isValid(blogId)
+      ? { _id: blogId }
+      : { slug: blogId };
+    blog = await Blog.findOne(query).select('title summary content coverImage slug').lean();
+  } catch (err) {
+    console.error('Share endpoint DB lookup error:', err);
+  }
+
+  // Build the canonical frontend URL using slug
+  const blogPath = blog?.slug || blogId;
+  const blogUrl = `${frontendUrl}/blogs/${blogPath}`;
 
   // Regular browsers get redirected to the frontend blog page
   const userAgent = req.headers['user-agent'] || '';
@@ -63,36 +79,21 @@ router.get('/share/:blogId', async (req, res) => {
     return res.redirect(302, blogUrl);
   }
 
-  // For crawlers: use query params if provided, otherwise fetch from DB
-  let safeTitle = title ? String(title).substring(0, 100) : '';
-  let safeDesc = description ? String(description).substring(0, 200) : '';
-  let imageUrl = image || '';
+  // Build OG metadata from blog
+  let safeTitle = blog ? (blog.title || 'Ajeyam.in Blog').substring(0, 100) : 'Ajeyam.in Blog';
+  let safeDesc = blog
+    ? (blog.summary || (blog.content || '').replace(/<[^>]*>/g, '')).substring(0, 200)
+    : 'Read this fascinating article on Ajeyam.in';
 
-  if (!safeTitle || !imageUrl) {
-    try {
-      const mongoose = require('mongoose');
-      const Blog = require('../models/Blog');
-      const query = mongoose.Types.ObjectId.isValid(blogId)
-        ? { _id: blogId }
-        : { slug: blogId };
-      const blog = await Blog.findOne(query).select('title summary content coverImage').lean();
-      if (blog) {
-        if (!safeTitle) safeTitle = (blog.title || 'Ajeyam.in Blog').substring(0, 100);
-        if (!safeDesc) safeDesc = (blog.summary || (blog.content || '').replace(/<[^>]*>/g, '')).substring(0, 200);
-        if (!imageUrl) imageUrl = blog.coverImage || '';
-      }
-    } catch (err) {
-      console.error('Share endpoint DB lookup error:', err);
+  // Build absolute image URL
+  let imageUrl = '';
+  if (blog?.coverImage) {
+    if (blog.coverImage.startsWith('http')) {
+      imageUrl = blog.coverImage;
+    } else {
+      // Relative path like /uploads/blogs/image.jpg — prefix with API domain
+      imageUrl = `${apiUrl}${blog.coverImage.startsWith('/') ? '' : '/'}${blog.coverImage}`;
     }
-  }
-
-  if (!safeTitle) safeTitle = 'Ajeyam.in Blog';
-  if (!safeDesc) safeDesc = 'Read this fascinating article on Ajeyam.in';
-
-  // Ensure image URL is absolute
-  if (imageUrl && !imageUrl.startsWith('http')) {
-    const apiHost = `${req.protocol}://${req.get('host')}`;
-    imageUrl = `${apiHost}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
   }
   if (!imageUrl) imageUrl = `${frontendUrl}/og-image.jpg`;
 
