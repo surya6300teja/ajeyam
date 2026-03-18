@@ -49,8 +49,7 @@ jobs:
           build-args: |
             VITE_API_URL=https://api.ajeyam.in/api/v1
             VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-          cache-from: type=inline
-          cache-to: type=inline
+          no-cache: true
 
       # ---- NEW STEP TO CREATE .ENV FILE ----
       - name: Create .env file for Backend
