@@ -48,71 +48,83 @@ twitter:image: ${imageUrl}</pre>
   res.send(html);
 });
 
-// Create an endpoint to serve a redirect with proper OG tags
-router.get('/share/:blogId', (req, res) => {
+// Share endpoint — serves OG meta tags for crawlers, redirects browsers to frontend
+router.get('/share/:blogId', async (req, res) => {
   const { blogId } = req.params;
   const { title, image, description } = req.query;
-  
-  // If this is a direct browser request (not a social media crawler),
-  // just redirect to the blog page
+  const frontendUrl = process.env.FRONTEND_URL || 'https://ajeyam.in';
+  const blogUrl = `${frontendUrl}/blogs/${blogId}`;
+
+  // Regular browsers get redirected to the frontend blog page
   const userAgent = req.headers['user-agent'] || '';
-  const isCrawler = /facebookexternalhit|twitterbot|whatsapp|telegram|linkedin|bot|crawler|spider|pinterest/i.test(userAgent);
-  
+  const isCrawler = /facebookexternalhit|twitterbot|whatsapp|telegram|linkedinbot|bot|crawler|spider|pinterest|slackbot|discordbot/i.test(userAgent);
+
   if (!isCrawler) {
-    // For regular browsers, redirect to the client-side route
-    return res.redirect(302, `/blogs/${blogId}`);
+    return res.redirect(302, blogUrl);
   }
-  
-  // For social media crawlers, serve static HTML with OG tags
-  
-  // Ensure image URL is absolute and valid
-  let imageUrl = '/uploads/blogs/default.jpg'; // Default fallback image
-  
-  // Only use provided image if it's an absolute URL
-  if (image && (image.startsWith('http://') || image.startsWith('https://'))) {
-    imageUrl = image;
-  } else if (image && image.startsWith('/')) {
-    // For server-relative URLs, make them absolute
-    imageUrl = `${req.protocol}://${req.get('host')}${image}`;
-  } else {
-    // Use default absolute URL
-    imageUrl = `${req.protocol}://${req.get('host')}${imageUrl}`;
+
+  // For crawlers: use query params if provided, otherwise fetch from DB
+  let safeTitle = title ? String(title).substring(0, 100) : '';
+  let safeDesc = description ? String(description).substring(0, 200) : '';
+  let imageUrl = image || '';
+
+  if (!safeTitle || !imageUrl) {
+    try {
+      const mongoose = require('mongoose');
+      const Blog = require('../models/Blog');
+      const query = mongoose.Types.ObjectId.isValid(blogId)
+        ? { _id: blogId }
+        : { slug: blogId };
+      const blog = await Blog.findOne(query).select('title summary content coverImage').lean();
+      if (blog) {
+        if (!safeTitle) safeTitle = (blog.title || 'Ajeyam.in Blog').substring(0, 100);
+        if (!safeDesc) safeDesc = (blog.summary || (blog.content || '').replace(/<[^>]*>/g, '')).substring(0, 200);
+        if (!imageUrl) imageUrl = blog.coverImage || '';
+      }
+    } catch (err) {
+      console.error('Share endpoint DB lookup error:', err);
+    }
   }
-  
-  // Create sanitized title and description
-  const safeTitle = title ? String(title).substring(0, 100) : 'Ajeyam.in Blog';
-  const safeDescription = description ? String(description).substring(0, 200) : 'Read this fascinating article on Ajeyam.in';
-  
-  // For social crawlers, the target URL should be the full absolute URL to the blog
-  const targetUrl = `${req.protocol}://${req.get('host')}/blogs/${blogId}`;
-  
-  const html = `
-<!DOCTYPE html>
+
+  if (!safeTitle) safeTitle = 'Ajeyam.in Blog';
+  if (!safeDesc) safeDesc = 'Read this fascinating article on Ajeyam.in';
+
+  // Ensure image URL is absolute
+  if (imageUrl && !imageUrl.startsWith('http')) {
+    const apiHost = `${req.protocol}://${req.get('host')}`;
+    imageUrl = `${apiHost}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+  }
+  if (!imageUrl) imageUrl = `${frontendUrl}/og-image.jpg`;
+
+  // Escape quotes for HTML attributes
+  safeTitle = safeTitle.replace(/"/g, '&quot;');
+  safeDesc = safeDesc.replace(/"/g, '&quot;');
+
+  const html = `<!DOCTYPE html>
 <html>
 <head>
-  <title>${safeTitle}</title>
-  <meta property="og:title" content="${safeTitle}" />
-  <meta property="og:description" content="${safeDescription}" />
-  <meta property="og:image" content="${imageUrl}" />
+  <meta charset="utf-8" />
+  <title>${safeTitle} | Ajeyam.in</title>
   <meta property="og:type" content="article" />
-  <meta property="og:url" content="${targetUrl}" />
-  
+  <meta property="og:url" content="${blogUrl}" />
+  <meta property="og:title" content="${safeTitle}" />
+  <meta property="og:description" content="${safeDesc}" />
+  <meta property="og:image" content="${imageUrl}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="Ajeyam.in" />
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@ajeyam_speaks" />
   <meta name="twitter:title" content="${safeTitle}" />
-  <meta name="twitter:description" content="${safeDescription}" />
+  <meta name="twitter:description" content="${safeDesc}" />
   <meta name="twitter:image" content="${imageUrl}" />
-  
-  <meta http-equiv="refresh" content="0;url=${targetUrl}" />
+  <meta http-equiv="refresh" content="0;url=${blogUrl}" />
 </head>
-<body>
-  <p>Redirecting to article...</p>
-</body>
-</html>
-  `;
-  
-  // Set cache control headers for better performance
-  res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+<body><p>Redirecting to article...</p></body>
+</html>`;
+
   res.setHeader('Content-Type', 'text/html');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
   res.send(html);
 });
 

@@ -213,7 +213,9 @@ const BlogDetail = () => {
   const handleShare = (platform) => {
     if (!blog) return;
 
-    // Use direct URL for all sharing to avoid encoding issues
+    // Use the server-side share URL for platforms that crawl for OG tags
+    // This ensures WhatsApp, Facebook, etc. see proper title/image/description
+    const ogUrl = getShareUrl();
     const directUrl = window.location.href;
     const title = blog.title || 'Check out this blog post on Ajeyam.in';
 
@@ -221,36 +223,28 @@ const BlogDetail = () => {
 
     switch (platform) {
       case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(directUrl)}&text=${encodeURIComponent(title)}`;
+        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(ogUrl)}&text=${encodeURIComponent(title)}`;
         break;
       case 'facebook':
-        // Facebook sharing is simpler and more reliable with just the URL
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(directUrl)}`;
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ogUrl)}`;
         break;
       case 'whatsapp':
-        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(title + ' - ' + directUrl)}`;
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(title + ' - ' + ogUrl)}`;
         break;
       case 'linkedin':
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(directUrl)}`;
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(ogUrl)}`;
         break;
       case 'instagram':
-        // Instagram doesn't have a direct sharing URL
         alert('To share on Instagram, please take a screenshot and share it on your story with the link in your bio.');
         return;
       case 'copy':
         navigator.clipboard.writeText(directUrl);
         alert('Link copied to clipboard!');
         return;
-      case 'advanced':
-        // Only use the special server-side sharing URL for "advanced" sharing option
-        const serverShareUrl = getShareUrl();
-        window.open(serverShareUrl, '_blank');
-        return;
       default:
         return;
     }
 
-    // Open share URL in a new window
     window.open(shareUrl, '_blank', 'width=600,height=400');
   };
 
