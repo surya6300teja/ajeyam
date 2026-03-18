@@ -22,6 +22,7 @@ services:
         # but for build time it needs a value.
         # In production, we'll ensure the build process injects the correct URL
         VITE_API_URL: https://api.ajeyam.in/api/v1
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     container_name: mern_app_frontend
     restart: always
     # Ports removed to keep it internal to the docker network
