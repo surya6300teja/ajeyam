@@ -1,22 +1,21 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-// import { HelmetProvider } from 'react-helmet-async'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import App from './App.jsx'
 import './styles/index.css'
 import { AuthProvider } from './context/AuthContext'
 
-// Create a helmetContext to ensure proper rendering of meta tags
-const helmetContext = {};
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {/* <HelmetProvider context={helmetContext}> */}
+    <GoogleOAuthProvider clientId={googleClientId}>
       <BrowserRouter>
         <AuthProvider>
           <App />
         </AuthProvider>
       </BrowserRouter>
-    {/* </HelmetProvider> */}
+    </GoogleOAuthProvider>
   </React.StrictMode>,
 )

@@ -48,6 +48,7 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/mern-frontend:latest
           build-args: |
             VITE_API_URL=https://api.ajeyam.in/api/v1
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           cache-from: type=inline
           cache-to: type=inline
 
@@ -57,6 +58,7 @@ jobs:
           echo "Creating .env file..."
           echo "MONGODB_URL=${{ secrets.MONGODB_URL }}" > .env
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
           echo ".env file created successfully."
 
       - name: Deploy to EC2 with Docker Compose

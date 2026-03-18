@@ -13,6 +13,9 @@ router.get('/verify-email/:token', authController.verifyEmail);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password/:token', authController.resetPassword);
 
+// Google OAuth
+router.post('/google', authController.googleLogin);
+
 // Get current user (requires authentication)
 router.get('/me', authController.protect, authController.getCurrentUser);
 

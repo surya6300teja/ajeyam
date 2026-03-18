@@ -12,6 +12,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.1",
     "@heroicons/react": "^2.2.0",
+    "@react-oauth/google": "^0.13.4",
     "@tailwindcss/vite": "^4.1.3",
     "@tiptap/extension-font-family": "^2.27.2",
     "@tiptap/extension-image": "^2.11.7",

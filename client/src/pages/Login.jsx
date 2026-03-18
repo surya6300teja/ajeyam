@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, error: authError, clearError } = useAuth();
+  const location = useLocation();
+  const { login, googleLogin, error: authError, clearError } = useAuth();
   const [credentials, setCredentials] = useState({
     email: '',
     password: '',
@@ -12,6 +14,7 @@ const Login = () => {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [successMessage] = useState(location.state?.message || '');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -47,6 +50,12 @@ const Login = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-8">
+          {successMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6" role="alert">
+              <p>{successMessage}</p>
+            </div>
+          )}
+
           {(error || authError) && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" role="alert">
               <p>{error || authError}</p>
@@ -124,6 +133,35 @@ const Login = () => {
             </button>
           </form>
 
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                try {
+                  await googleLogin(credentialResponse.credential);
+                  navigate('/');
+                } catch (err) {
+                  console.error('Google login error:', err);
+                }
+              }}
+              onError={() => {
+                setError('Google sign-in failed. Please try again.');
+              }}
+              size="large"
+              width="100%"
+              text="signin_with"
+              shape="rectangular"
+            />
+          </div>
+
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account? {' '}
@@ -131,13 +169,6 @@ const Login = () => {
                 Sign up
               </Link>
             </p>
-          </div>
-          
-          {/* Demo credentials for testing */}
-          <div className="mt-4 bg-gray-100 p-4 rounded-md">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Demo Credentials:</h3>
-            <p className="text-xs text-gray-600">Admin: admin@ajeyam.com / password</p>
-            <p className="text-xs text-gray-600">User: user@ajeyam.com / password</p>
           </div>
         </div>
       </div>

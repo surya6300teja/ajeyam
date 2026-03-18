@@ -38,17 +38,22 @@ const UserSchema = new mongoose.Schema(
       enum: ['user', 'admin'],
       default: 'user'
     },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true, // Allows multiple null values (for non-Google users)
+    },
     password: {
       type: String,
-      required: [true, 'Please provide a password'],
+      required: [function() { return !this.googleId; }, 'Please provide a password'],
       minlength: [6, 'Password must be at least 6 characters long'],
       select: false // Don't return password in queries by default
     },
     passwordConfirm: {
       type: String,
       required: function() {
-        // Only required on CREATE and when password is modified
-        return this.isNew || this.isModified('password');
+        // Only required on CREATE and when password is modified, skip for Google users
+        return !this.googleId && (this.isNew || this.isModified('password'));
       },
       validate: {
         // This only works on CREATE and SAVE, not with update!

@@ -113,6 +113,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Google login function
+  const googleLogin = async (credential) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      const response = await api.auth.googleLogin(credential);
+      const { token, data } = response.data;
+
+      localStorage.setItem('token', token);
+      setCurrentUser(data.user);
+      setIsAuthenticated(true);
+      setIsAdmin(data.user.role === 'admin');
+
+      return data.user;
+    } catch (err) {
+      setError(err.response?.data?.message || 'Google login failed. Please try again.');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Logout function
   const logout = async () => {
     try {
@@ -185,6 +208,7 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     signup,
+    googleLogin,
     logout,
     updateProfile,
     changePassword,

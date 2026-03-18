@@ -13,10 +13,10 @@ const signToken = (id) => {
 // Helper function to create and send token in response
 const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
-  
+
   // Remove password from output
   user.password = undefined;
-  
+
   res.status(statusCode).json({
     status: 'success',
     token,
@@ -30,10 +30,10 @@ exports.register = async (req, res, next) => {
     console.log('=== REGISTRATION ATTEMPT ===');
     console.log('Request body type:', typeof req.body);
     console.log('Request body:', req.body);
-    
+
     // Safely extract data from request body
     let name, email, password, passwordConfirm;
-    
+
     try {
       // Check if req.body is a string (incorrectly formatted JSON)
       if (typeof req.body === 'string') {
@@ -56,7 +56,7 @@ exports.register = async (req, res, next) => {
         message: 'Could not parse request data. Please ensure you are sending valid JSON.',
       });
     }
-    
+
     // Check if all required fields are provided
     if (!name || !email || !password || !passwordConfirm) {
       console.log('Missing required fields:', {
@@ -65,16 +65,16 @@ exports.register = async (req, res, next) => {
         password: !password ? 'missing' : 'provided',
         passwordConfirm: !passwordConfirm ? 'missing' : 'provided'
       });
-      
+
       return res.status(400).json({
         status: 'error',
         message: 'Please provide all required fields: name, email, password, passwordConfirm',
       });
     }
-    
+
     // Check if user with this email already exists
     const existingUser = await User.findOne({ email });
-    
+
     if (existingUser) {
       console.log('Registration failed: Email already in use:', email);
       return res.status(400).json({
@@ -82,9 +82,9 @@ exports.register = async (req, res, next) => {
         message: 'Email already in use. Please use a different email or login.',
       });
     }
-    
+
     console.log('Creating new user with data:', { name, email });
-    
+
     // Create new user
     const newUser = await User.create({
       name,
@@ -95,11 +95,11 @@ exports.register = async (req, res, next) => {
       emailVerificationToken: crypto.randomBytes(32).toString('hex'),
       emailVerificationExpires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     });
-    
+
     console.log('User created successfully with ID:', newUser._id);
-    
+
     // In a production app, send verification email here
-    
+
     // Create token and send response
     createSendToken(newUser, 201, res);
   } catch (error) {
@@ -107,7 +107,7 @@ exports.register = async (req, res, next) => {
     console.error('Error name:', error.name);
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
-    
+
     // Handle Mongoose validation errors
     if (error.name === 'ValidationError') {
       console.error('Validation error details:', JSON.stringify(error.errors));
@@ -118,7 +118,7 @@ exports.register = async (req, res, next) => {
         details: error.errors
       });
     }
-    
+
     // Handle MongoDB duplicate key errors
     if (error.code === 11000) {
       console.error('Duplicate key error:', error.keyValue);
@@ -128,7 +128,7 @@ exports.register = async (req, res, next) => {
         field: Object.keys(error.keyValue)[0]
       });
     }
-    
+
     res.status(400).json({
       status: 'error',
       message: error.message,
@@ -140,7 +140,7 @@ exports.register = async (req, res, next) => {
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    
+
     // Check if email and password exist
     if (!email || !password) {
       return res.status(400).json({
@@ -148,10 +148,10 @@ exports.login = async (req, res, next) => {
         message: 'Please provide email and password',
       });
     }
-    
+
     // Find user by email and include password in results
     const user = await User.findOne({ email }).select('+password');
-    
+
     // Check if user exists and password is correct
     if (!user || !(await user.correctPassword(password, user.password))) {
       return res.status(401).json({
@@ -159,7 +159,7 @@ exports.login = async (req, res, next) => {
         message: 'Incorrect email or password',
       });
     }
-    
+
     // Create token and send response
     createSendToken(user, 200, res);
   } catch (error) {
@@ -174,7 +174,7 @@ exports.login = async (req, res, next) => {
 exports.protect = async (req, res, next) => {
   try {
     let token;
-    
+
     // Get token from Authorization header
     if (
       req.headers.authorization &&
@@ -182,7 +182,7 @@ exports.protect = async (req, res, next) => {
     ) {
       token = req.headers.authorization.split(' ')[1];
     }
-    
+
     // Check if token exists
     if (!token) {
       return res.status(401).json({
@@ -190,20 +190,20 @@ exports.protect = async (req, res, next) => {
         message: 'You are not logged in. Please log in to get access.',
       });
     }
-    
+
     // Verify token
     const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-    
+
     // Check if user still exists
     const currentUser = await User.findById(decoded.id);
-    
+
     if (!currentUser) {
       return res.status(401).json({
         status: 'error',
         message: 'The user belonging to this token no longer exists.',
       });
     }
-    
+
     // Check if user changed password after token was issued
     if (currentUser.changedPasswordAfter(decoded.iat)) {
       return res.status(401).json({
@@ -211,7 +211,7 @@ exports.protect = async (req, res, next) => {
         message: 'User recently changed password. Please log in again.',
       });
     }
-    
+
     // Grant access to protected route
     req.user = currentUser;
     next();
@@ -233,7 +233,7 @@ exports.restrictTo = (...roles) => {
         message: 'You do not have permission to perform this action',
       });
     }
-    
+
     next();
   };
 };
@@ -242,13 +242,13 @@ exports.restrictTo = (...roles) => {
 exports.verifyEmail = async (req, res, next) => {
   try {
     const { token } = req.params;
-    
+
     // Find user with this verification token
     const user = await User.findOne({
       emailVerificationToken: token,
       emailVerificationExpires: { $gt: Date.now() },
     });
-    
+
     // Check if user exists and token is valid
     if (!user) {
       return res.status(400).json({
@@ -256,13 +256,13 @@ exports.verifyEmail = async (req, res, next) => {
         message: 'Token is invalid or has expired',
       });
     }
-    
+
     // Update user to verified
     user.isEmailVerified = true;
     user.emailVerificationToken = undefined;
     user.emailVerificationExpires = undefined;
     await user.save({ validateBeforeSave: false });
-    
+
     res.status(200).json({
       status: 'success',
       message: 'Email successfully verified. You can now log in.',
@@ -279,28 +279,45 @@ exports.verifyEmail = async (req, res, next) => {
 exports.forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
-    
+
     // Find user by email
     const user = await User.findOne({ email });
-    
+
     if (!user) {
       return res.status(404).json({
         status: 'error',
         message: 'There is no user with that email address',
       });
     }
-    
+
     // Generate random reset token
     const resetToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
-    
-    // In a production app, send reset email here
-    
-    res.status(200).json({
-      status: 'success',
-      message: 'Token sent to email!',
-      resetToken, // In production, you would NOT send this in the response
-    });
+
+    // Build reset URL pointing to the frontend
+    const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetURL = `${frontendURL}/reset-password/${resetToken}`;
+
+    try {
+      const { sendPasswordResetEmail } = require('../utils/emailService');
+      await sendPasswordResetEmail(user.email, resetURL);
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Password reset link sent to your email!',
+      });
+    } catch (emailError) {
+      // If email fails, clear the reset token so the user can try again
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      console.error('Email send error:', emailError);
+      res.status(500).json({
+        status: 'error',
+        message: 'There was an error sending the email. Please try again later.',
+      });
+    }
   } catch (error) {
     res.status(400).json({
       status: 'error',
@@ -309,18 +326,19 @@ exports.forgotPassword = async (req, res, next) => {
   }
 };
 
+
 // Reset password
 exports.resetPassword = async (req, res, next) => {
   try {
     const { token } = req.params;
     const { password, passwordConfirm } = req.body;
-    
+
     // Find user with valid reset token
     const user = await User.findOne({
       passwordResetToken: crypto.createHash('sha256').update(token).digest('hex'),
       passwordResetExpires: { $gt: Date.now() },
     });
-    
+
     // Check if token is valid and not expired
     if (!user) {
       return res.status(400).json({
@@ -328,14 +346,14 @@ exports.resetPassword = async (req, res, next) => {
         message: 'Token is invalid or has expired',
       });
     }
-    
+
     // Update user password
     user.password = password;
     user.passwordConfirm = passwordConfirm;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
-    
+
     // Log the user in, send JWT
     createSendToken(user, 200, res);
   } catch (error) {
@@ -346,11 +364,71 @@ exports.resetPassword = async (req, res, next) => {
   }
 };
 
+// Google Sign-In
+exports.googleLogin = async (req, res, next) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Google credential is required',
+      });
+    }
+
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    // Verify the Google ID token
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    // Check if user already exists with this Google ID
+    let user = await User.findOne({ googleId });
+
+    if (!user) {
+      // Check if a user exists with the same email (signed up via email/password)
+      user = await User.findOne({ email });
+
+      if (user) {
+        // Link Google account to existing user
+        user.googleId = googleId;
+        if (!user.avatar || user.avatar.includes('ui-avatars.com')) {
+          user.avatar = picture;
+        }
+        await user.save({ validateBeforeSave: false });
+      } else {
+        // Create a new user
+        user = await User.create({
+          name,
+          email,
+          googleId,
+          avatar: picture,
+          isEmailVerified: true, // Google emails are already verified
+        });
+      }
+    }
+
+    // Create token and send response
+    createSendToken(user, 200, res);
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(400).json({
+      status: 'error',
+      message: 'Google authentication failed. Please try again.',
+    });
+  }
+};
+
 // Get current user data
 exports.getCurrentUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
-    
+
     res.status(200).json({
       status: 'success',
       data: { user },

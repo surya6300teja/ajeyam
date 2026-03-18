@@ -89,6 +89,7 @@ const authAPI = {
   verifyEmail: (token) => api.get(`/auth/verify-email/${token}`),
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
   resetPassword: (token, passwords) => api.post(`/auth/reset-password/${token}`, passwords),
+  googleLogin: (credential) => api.post('/auth/google', { credential }),
   getCurrentUser: () => api.get('/auth/me'),
 };
 

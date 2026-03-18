@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { signup, error: authError, clearError } = useAuth();
+  const { signup, googleLogin, error: authError, clearError } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -168,6 +169,35 @@ const Signup = () => {
               ) : 'Sign up'}
             </button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                try {
+                  await googleLogin(credentialResponse.credential);
+                  navigate('/');
+                } catch (err) {
+                  console.error('Google signup error:', err);
+                }
+              }}
+              onError={() => {
+                setError('Google sign-in failed. Please try again.');
+              }}
+              size="large"
+              width="100%"
+              text="signup_with"
+              shape="rectangular"
+            />
+          </div>
 
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">
