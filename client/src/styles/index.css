@@ -1,6 +1,17 @@
 @import "tailwindcss";
 @import "./blog.css";
 
+/* Tailwind v4 reads theme tokens from CSS, NOT tailwind.config.js.
+   These map the font utilities to our type system so `font-serif`,
+   `font-sans`, and `font-devanagari` are consistent everywhere
+   (without this, `font-serif` falls back to the default Georgia stack
+   while plain headings use Crimson Pro — i.e. mismatched fonts). */
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Crimson Pro', 'Merriweather', serif;
+  --font-devanagari: 'Sanskrit Text', 'Noto Sans Devanagari', 'Arial', sans-serif;
+}
+
 
 @layer base {
   body {
