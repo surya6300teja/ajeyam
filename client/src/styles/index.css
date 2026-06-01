@@ -1,22 +1,10 @@
 @import "tailwindcss";
 @import "./blog.css";
 
-/* Tailwind v4 reads theme tokens from CSS, NOT tailwind.config.js.
-   The site uses a single typeface (Crimson Pro) for everything — headings
-   and body alike — so both `font-sans` AND `font-serif` resolve to it.
-   (To switch the whole site to another font later, change these two tokens
-   and the base rules below.) --font-devanagari stays a Devanagari-capable
-   stack for Sanskrit text. */
-@theme {
-  --font-sans: 'Crimson Pro', 'Merriweather', serif;
-  --font-serif: 'Crimson Pro', 'Merriweather', serif;
-  --font-devanagari: 'Sanskrit Text', 'Noto Sans Devanagari', 'Arial', sans-serif;
-}
-
 
 @layer base {
   body {
-    font-family: 'Crimson Pro', 'Merriweather', serif;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
     color: #333333;
     background-color: #F9F5ED;
   }
@@ -41,7 +29,7 @@
   textarea,
   select,
   button {
-    font-family: 'Crimson Pro', 'Merriweather', serif;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   }
 }
 
