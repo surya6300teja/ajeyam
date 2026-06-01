@@ -2,22 +2,21 @@
 @import "./blog.css";
 
 /* Tailwind v4 reads theme tokens from CSS, NOT tailwind.config.js.
-   The site uses a single typeface (Inter) for everything — headings and
-   body alike — so both `font-sans` AND `font-serif` intentionally resolve
-   to Inter. (`font-serif` is used on ~59 headings; mapping the token here
-   keeps them all on Inter without editing every file. To reintroduce a
-   serif for headings later, just point --font-serif back at 'Crimson Pro'.)
-   --font-devanagari stays a Devanagari-capable stack for Sanskrit text. */
+   The site uses a single typeface (Crimson Pro) for everything — headings
+   and body alike — so both `font-sans` AND `font-serif` resolve to it.
+   (To switch the whole site to another font later, change these two tokens
+   and the base rules below.) --font-devanagari stays a Devanagari-capable
+   stack for Sanskrit text. */
 @theme {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-serif: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Crimson Pro', 'Merriweather', serif;
+  --font-serif: 'Crimson Pro', 'Merriweather', serif;
   --font-devanagari: 'Sanskrit Text', 'Noto Sans Devanagari', 'Arial', sans-serif;
 }
 
 
 @layer base {
   body {
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Crimson Pro', 'Merriweather', serif;
     color: #333333;
     background-color: #F9F5ED;
   }
@@ -28,7 +27,7 @@
   h4,
   h5,
   h6 {
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Crimson Pro', 'Merriweather', serif;
   }
 
   p,
@@ -42,7 +41,7 @@
   textarea,
   select,
   button {
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Crimson Pro', 'Merriweather', serif;
   }
 }
 

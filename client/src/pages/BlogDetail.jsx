@@ -645,7 +645,7 @@ const BlogDetail = () => {
           .prose h1, .prose h2, .prose h3 {
             font-weight: 700;
             color: #78350f;
-            font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+            font-family: 'Crimson Pro', 'Merriweather', serif;
           }
           
           .prose h1 {
