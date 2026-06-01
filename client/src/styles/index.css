@@ -2,13 +2,15 @@
 @import "./blog.css";
 
 /* Tailwind v4 reads theme tokens from CSS, NOT tailwind.config.js.
-   These map the font utilities to our type system so `font-serif`,
-   `font-sans`, and `font-devanagari` are consistent everywhere
-   (without this, `font-serif` falls back to the default Georgia stack
-   while plain headings use Crimson Pro — i.e. mismatched fonts). */
+   The site uses a single typeface (Inter) for everything — headings and
+   body alike — so both `font-sans` AND `font-serif` intentionally resolve
+   to Inter. (`font-serif` is used on ~59 headings; mapping the token here
+   keeps them all on Inter without editing every file. To reintroduce a
+   serif for headings later, just point --font-serif back at 'Crimson Pro'.)
+   --font-devanagari stays a Devanagari-capable stack for Sanskrit text. */
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-serif: 'Crimson Pro', 'Merriweather', serif;
+  --font-serif: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-devanagari: 'Sanskrit Text', 'Noto Sans Devanagari', 'Arial', sans-serif;
 }
 
@@ -26,7 +28,7 @@
   h4,
   h5,
   h6 {
-    font-family: 'Crimson Pro', 'Merriweather', serif;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   }
 
   p,
