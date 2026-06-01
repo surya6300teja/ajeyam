@@ -1,7 +1,32 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../../services/api';
+
+// Shown until the real categories load, and as a fallback if the request fails.
+const FALLBACK_CATEGORIES = ['Ancient India', 'Medieval India'];
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    api.categories
+      .getAllCategories({ limit: 5 })
+      .then((res) => {
+        const data =
+          res?.data?.data?.categories ||
+          res?.data?.categories ||
+          (Array.isArray(res?.data) ? res.data : []);
+        if (active && Array.isArray(data) && data.length) {
+          setCategories(data.slice(0, 5).map((c) => c.name).filter(Boolean));
+        }
+      })
+      .catch(() => {/* keep fallback list */});
+    return () => { active = false; };
+  }, []);
+
+  const categoryNames = categories.length ? categories : FALLBACK_CATEGORIES;
 
   return (
     <footer className="bg-background-dark text-text-light py-10">
@@ -27,11 +52,16 @@ const Footer = () => {
           <div className="col-span-1">
             <h3 className="text-lg font-semibold mb-4 font-serif">Categories</h3>
             <ul className="space-y-2">
-              <li><Link to="/categories/ancient-india" className="hover:text-primary transition-colors">Ancient India</Link></li>
-              <li><Link to="/categories/medieval-india" className="hover:text-primary transition-colors">Medieval India</Link></li>
-              <li><Link to="/categories/colonial-era" className="hover:text-primary transition-colors">Colonial Era</Link></li>
-              <li><Link to="/categories/independence-movement" className="hover:text-primary transition-colors">Independence Movement</Link></li>
-              <li><Link to="/categories/modern-history" className="hover:text-primary transition-colors">Modern History</Link></li>
+              {categoryNames.map((name) => (
+                <li key={name}>
+                  <Link
+                    to={`/blogs?category=${encodeURIComponent(name)}`}
+                    className="hover:text-primary transition-colors"
+                  >
+                    {name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 

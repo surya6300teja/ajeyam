@@ -22,6 +22,8 @@ import Contact from './pages/Contact';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import NotFound from './pages/NotFound';
+import CategoryRedirect from './pages/CategoryRedirect';
 
 function App() {
   return (
@@ -32,6 +34,9 @@ function App() {
         <Route path="blogs" element={<BlogList />} />
         <Route path="blogs/:id" element={<BlogDetail />} />
         <Route path="categories" element={<Categories />} />
+        {/* Legacy category links (e.g. /categories/medieval-india) now redirect
+            to the filtered blog list instead of rendering a blank page. */}
+        <Route path="categories/:slug" element={<CategoryRedirect />} />
         <Route path="login" element={<Login />} />
         <Route path="signup" element={<Signup />} />
         <Route path="book-reviews" element={<BookReviewsList />} />
@@ -59,6 +64,9 @@ function App() {
           <Route path="admin/categories" element={<AdminCategories />} />
           {/* Add other admin routes here */}
         </Route>
+
+        {/* Catch-all: anything unmatched shows a friendly 404 instead of a blank page */}
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );

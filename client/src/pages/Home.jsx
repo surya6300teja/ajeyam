@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Clock } from 'react-feather';
+import { getCategoryImage } from '../utils/categoryImages';
 
 const Home = () => {
   const [featuredBlogs, setFeaturedBlogs] = useState([]);
@@ -319,7 +320,7 @@ const Home = () => {
                 >
                   <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors duration-500"></div>
                   <img
-                    src={category.imageUrl || `https://images.unsplash.com/photo-1524492412937-b28074a5d7da?q=80&w=3000`}
+                    src={getCategoryImage(category)}
                     alt={category.name}
                     className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                   />
