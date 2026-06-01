@@ -56,13 +56,13 @@
   margin: 0 auto;
 }
 
-/* Headings */
-.prose h1, 
-.prose h2, 
+/* Headings — single site-wide typeface (Crimson Pro) */
+.prose h1,
+.prose h2,
 .prose h3 {
   font-weight: 700;
   color: #78350f;
-  font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  font-family: 'Crimson Pro', 'Merriweather', serif;
   line-height: 1.3;
 }
 

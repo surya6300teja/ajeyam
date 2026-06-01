@@ -1,10 +1,26 @@
 @import "tailwindcss";
 @import "./blog.css";
 
+/* Tailwind v4 reads theme tokens from CSS, not tailwind.config.js.
+   Single typeface across the whole app: Crimson Pro. Both font-sans and
+   font-serif map to it so every utility/element is consistent. */
+@theme {
+  --font-sans: 'Crimson Pro', 'Merriweather', serif;
+  --font-serif: 'Crimson Pro', 'Merriweather', serif;
+  --font-devanagari: 'Sanskrit Text', 'Noto Sans Devanagari', 'Arial', sans-serif;
+}
 
 @layer base {
+  /* Crimson Pro has a smaller x-height than Inter/Georgia, so the same px
+     sizes look smaller. font-size-adjust normalizes the rendered x-height
+     so text matches the previous visual size — no need to touch any
+     text-* classes or layout/spacing. Tune the single value below. */
+  html {
+    font-size-adjust: 0.5;
+  }
+
   body {
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Crimson Pro', 'Merriweather', serif;
     color: #333333;
     background-color: #F9F5ED;
   }
@@ -29,7 +45,12 @@
   textarea,
   select,
   button {
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Crimson Pro', 'Merriweather', serif;
+  }
+
+  /* Keep Devanagari text on its own stack (Crimson Pro lacks those glyphs) */
+  .font-devanagari {
+    font-size-adjust: none;
   }
 }
 
