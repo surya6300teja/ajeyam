@@ -28,6 +28,29 @@ const Footer = () => {
 
   const categoryNames = categories.length ? categories : FALLBACK_CATEGORIES;
 
+  const [email, setEmail] = useState('');
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribeMsg, setSubscribeMsg] = useState(null);
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSubscribing(true);
+    setSubscribeMsg(null);
+    try {
+      const res = await api.subscribers.subscribe(email.trim());
+      setSubscribeMsg({ type: 'success', text: res?.data?.message || 'Thank you for subscribing!' });
+      setEmail('');
+    } catch (err) {
+      setSubscribeMsg({
+        type: 'error',
+        text: err?.response?.data?.message || 'Something went wrong. Please try again.',
+      });
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
   return (
     <footer className="bg-background-dark text-text-light py-10">
       <div className="container-custom">
@@ -68,20 +91,28 @@ const Footer = () => {
           <div className="col-span-1">
             <h3 className="text-lg font-semibold mb-4 font-serif">Subscribe</h3>
             <p className="mb-4 text-sm">Stay updated with our latest blogs and articles.</p>
-            <form className="flex flex-col sm:flex-row gap-2">
+            <form className="flex flex-col sm:flex-row gap-2" onSubmit={handleSubscribe}>
               <input
                 type="email"
                 placeholder="Your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="px-4 py-2 rounded-md text-text bg-white focus:outline-none focus:ring-2 focus:ring-primary"
                 required
               />
               <button
                 type="submit"
-                className="btn-primary whitespace-nowrap"
+                disabled={subscribing}
+                className="btn-primary whitespace-nowrap disabled:opacity-60"
               >
-                Subscribe
+                {subscribing ? 'Subscribing…' : 'Subscribe'}
               </button>
             </form>
+            {subscribeMsg && (
+              <p className={`mt-2 text-sm ${subscribeMsg.type === 'success' ? 'text-green-300' : 'text-red-300'}`}>
+                {subscribeMsg.text}
+              </p>
+            )}
           </div>
         </div>
 

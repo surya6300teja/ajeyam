@@ -176,6 +176,11 @@ const systemAPI = {
   healthCheck: () => api.get('/health'),
 };
 
+// Newsletter subscription
+const subscriberAPI = {
+  subscribe: (email) => api.post('/subscribe', { email }),
+};
+
 // Export the API
 export default {
   auth: authAPI,
@@ -185,6 +190,7 @@ export default {
   users: userAPI,
   system: systemAPI,
   bookReviews: bookReviewAPI,
+  subscribers: subscriberAPI,
   // Direct access to the axios instance
   axios: api,
-}; 
+};

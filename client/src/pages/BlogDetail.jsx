@@ -209,50 +209,60 @@ const BlogDetail = () => {
     }
   };
 
+  // Clean, public-facing article URL (no api. subdomain)
+  const getArticleUrl = () => {
+    if (!blog) return window.location.href;
+    return `https://ajeyam.in/blogs/${blog.slug || blog._id || identifier}`;
+  };
+
+  // Default share message — prefilled into the share box, user can edit before sending
+  const buildShareMessage = (articleUrl) => {
+    const title = blog?.title || 'this article';
+    return (
+      `Namaste 🙏\n\n` +
+      `This article talks about “${title}”.\n\n` +
+      `A simple and thoughtful read from an Indic perspective. Do give it a read when you get time.\n\n` +
+      `Please read, share, and follow. Also explore other insightful articles on www.ajeyam.in\n\n` +
+      `शुभमस्तु\n\n` +
+      `${articleUrl}`
+    );
+  };
+
   // Function to handle social sharing
   const handleShare = (platform) => {
     if (!blog) return;
 
-    // Use the server-side share URL for platforms that crawl for OG tags
-    // This ensures WhatsApp, Facebook, etc. see proper title/image/description
-    const ogUrl = getShareUrl();
-    const directUrl = window.location.href;
-    const title = blog.title || 'Check out this blog post on Ajeyam.in';
+    const articleUrl = getArticleUrl();
+    const message = buildShareMessage(articleUrl);
 
     let shareUrl;
 
     switch (platform) {
       case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(ogUrl)}&text=${encodeURIComponent(title)}`;
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`;
         break;
       case 'facebook':
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ogUrl)}`;
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}&quote=${encodeURIComponent(message)}`;
         break;
       case 'whatsapp':
-        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(title + ' - ' + ogUrl)}`;
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
         break;
       case 'linkedin':
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(ogUrl)}`;
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(articleUrl)}`;
         break;
       case 'instagram':
-        alert('To share on Instagram, please take a screenshot and share it on your story with the link in your bio.');
+        navigator.clipboard?.writeText(message);
+        alert('Message copied! Paste it into your Instagram story or bio.');
         return;
       case 'copy':
-        navigator.clipboard.writeText(directUrl);
-        alert('Link copied to clipboard!');
+        navigator.clipboard.writeText(message);
+        alert('Message copied to clipboard!');
         return;
       default:
         return;
     }
 
-    window.open(shareUrl, '_blank', 'width=600,height=400');
-  };
-
-  const getShareUrl = () => {
-    if (!blog) return window.location.href;
-    const apiBaseUrl = import.meta.env.VITE_API_URL || `${window.location.origin}/api/v1`;
-    // Use slug for a cleaner URL, fall back to _id
-    return `${apiBaseUrl}/utils/share/${blog.slug || blog._id || identifier}`;
+    window.open(shareUrl, '_blank', 'width=600,height=500');
   };
 
   // Save/Unsave blog handler
