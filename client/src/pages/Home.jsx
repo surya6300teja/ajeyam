@@ -140,7 +140,7 @@ const Home = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 justify-center items-center">
               <Link
-                to="/blogs"
+                to="/create-blog"
                 className="group relative rounded-full px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base overflow-hidden border border-amber-900"
               >
                 <span className="relative z-10 text-amber-900 font-medium group-hover:text-white transition-colors duration-100">
@@ -150,10 +150,10 @@ const Home = () => {
               </Link>
               <span className="text-gray-400 hidden sm:inline">or</span>
               <Link
-                to="/create-blog"
+                to="/blogs"
                 className="text-gray-600 hover:text-amber-900 transition-colors duration-300 text-sm sm:text-base"
               >
-                Share Your Story →
+                Reveal Untold Stories →
               </Link>
             </div>
           </div>
