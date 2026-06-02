@@ -33,8 +33,12 @@ const BlogList = () => {
         setLoading(true);
         setError(null);
 
-        // Fetch blogs
-        const blogsResponse = await api.axios.get('/blogs');
+        // Fetch blogs. The page filters by category/search/following on the
+        // client, so we need the full set loaded — otherwise the default page
+        // of 10 makes most categories look empty. (List excludes heavy
+        // `content` server-side; revisit with server-side paging if the
+        // catalogue grows much larger.)
+        const blogsResponse = await api.axios.get('/blogs', { params: { limit: 1000 } });
         const fetchedBlogs = blogsResponse.data.data.blogs || [];
         setBlogs(fetchedBlogs);
 
