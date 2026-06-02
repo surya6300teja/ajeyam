@@ -1,6 +1,23 @@
 const mongoose = require('mongoose');
 const Category = require('../models/Category');
 const Blog = require('../models/Blog');
+const { getFileUrl } = require('../utils/fileUpload');
+
+// Normalize fields coming from a multipart/form-data request and apply an
+// uploaded image (field: categoryImage) to imageUrl when present.
+const applyCategoryUpload = (req) => {
+  if (req.file) {
+    req.body.imageUrl = getFileUrl(req, `uploads/categories/${req.file.filename}`);
+  }
+  // multipart sends booleans as strings — coerce isActive properly
+  if (typeof req.body.isActive === 'string') {
+    req.body.isActive = req.body.isActive === 'true';
+  }
+  // Don't overwrite an existing image with an empty string on edit
+  if (req.body.imageUrl === '') {
+    delete req.body.imageUrl;
+  }
+};
 
 // Get all categories
 exports.getAllCategories = async (req, res) => {
@@ -98,6 +115,8 @@ exports.getCategory = async (req, res) => {
 // Create a new category (admin only)
 exports.createCategory = async (req, res) => {
   try {
+    applyCategoryUpload(req);
+
     // Check if parent category exists
     if (req.body.parentCategory) {
       const parentExists = await Category.findById(req.body.parentCategory);
@@ -127,6 +146,8 @@ exports.createCategory = async (req, res) => {
 // Update a category (admin only)
 exports.updateCategory = async (req, res) => {
   try {
+    applyCategoryUpload(req);
+
     const category = await Category.findById(req.params.id);
     
     if (!category) {

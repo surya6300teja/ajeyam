@@ -8,6 +8,8 @@ const AdminCategories = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', description: '', imageUrl: '', isActive: true });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -28,27 +30,61 @@ const AdminCategories = () => {
   const openCreate = () => {
     setEditing(null);
     setForm({ name: '', description: '', imageUrl: '', isActive: true });
+    setImageFile(null);
+    setImagePreview('');
     setIsModalOpen(true);
   };
 
   const openEdit = (cat) => {
     setEditing(cat);
     setForm({ name: cat.name || '', description: cat.description || '', imageUrl: cat.imageUrl || '', isActive: !!cat.isActive });
+    setImageFile(null);
+    setImagePreview(cat.imageUrl || '');
     setIsModalOpen(true);
   };
 
+  const onPickImage = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file (JPEG, PNG, GIF, or WebP).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be 5MB or smaller.');
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
   const save = async () => {
+    if (!form.name.trim() || !form.description.trim()) {
+      alert('Name and description are required.');
+      return;
+    }
     setSaving(true);
     try {
+      const data = new FormData();
+      data.append('name', form.name);
+      data.append('description', form.description);
+      data.append('isActive', form.isActive);
+      if (imageFile) {
+        data.append('categoryImage', imageFile);
+      } else if (form.imageUrl) {
+        // Preserve the existing image when no new file is chosen
+        data.append('imageUrl', form.imageUrl);
+      }
+
       if (editing) {
-        await api.categories.updateCategory(editing._id, form);
+        await api.categories.updateCategory(editing._id, data);
       } else {
-        await api.categories.createCategory(form);
+        await api.categories.createCategory(data);
       }
       setIsModalOpen(false);
       await load();
     } catch (e) {
-      alert('Failed to save category');
+      alert(e?.response?.data?.message || 'Failed to save category');
     } finally {
       setSaving(false);
     }
@@ -113,8 +149,21 @@ const AdminCategories = () => {
                 <textarea className="w-full border border-gray-300 rounded-lg px-3 py-2" rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                <input className="w-full border border-gray-300 rounded-lg px-3 py-2" value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category Image</label>
+                {imagePreview && (
+                  <img
+                    src={imagePreview}
+                    alt="Category preview"
+                    className="w-full h-40 object-cover rounded-lg mb-2 border border-gray-200"
+                  />
+                )}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,image/webp"
+                  onChange={onPickImage}
+                  className="w-full text-sm text-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-primary file:text-white file:cursor-pointer hover:file:bg-primary-dark"
+                />
+                <p className="mt-1 text-xs text-gray-500">JPEG, PNG, GIF or WebP, up to 5MB. {editing && form.imageUrl ? 'Leave empty to keep the current image.' : ''}</p>
               </div>
               <div className="flex items-center gap-2">
                 <input id="active" type="checkbox" checked={form.isActive} onChange={e => setForm({ ...form, isActive: e.target.checked })} />

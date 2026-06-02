@@ -10,6 +10,9 @@ services:
     #   - "3001:3001"
     env_file:
       - ./.env
+    # Persist uploaded files (e.g. category images) across container rebuilds
+    volumes:
+      - ./server/uploads:/app/uploads
     dns:
       - 8.8.8.8
       - 8.8.4.4

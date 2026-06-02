@@ -143,8 +143,12 @@ const categoryAPI = {
   getAllCategories: (params) => api.get('/categories', { params }),
   getMainCategoriesWithSubs: () => api.get('/categories/main-with-subs'),
   getCategory: (identifier) => api.get(`/categories/${identifier}`),
-  createCategory: (categoryData) => api.post('/categories', categoryData),
-  updateCategory: (id, categoryData) => api.patch(`/categories/${id}`, categoryData),
+  createCategory: (categoryData) =>
+    api.post('/categories', categoryData,
+      categoryData instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
+  updateCategory: (id, categoryData) =>
+    api.patch(`/categories/${id}`, categoryData,
+      categoryData instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
   deleteCategory: (id) => api.delete(`/categories/${id}`),
 };
 

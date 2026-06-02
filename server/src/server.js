@@ -20,6 +20,10 @@ const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 // Initialize express app
 const app = express();
 
+// Trust the nginx reverse proxy so req.protocol reflects X-Forwarded-Proto
+// (https). Needed so uploaded-file URLs are built as https, not http.
+app.set('trust proxy', true);
+
 // Detailed CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
