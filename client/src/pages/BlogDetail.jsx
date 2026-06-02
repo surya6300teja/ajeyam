@@ -374,7 +374,7 @@ const BlogDetail = () => {
     author: blog.author || { name: 'Unknown Author' },
     createdAt: blog.createdAt || new Date().toISOString(),
     readTime: blog.readTime || 5,
-    tags: blog.tags || [],
+    tags: (blog.tags || []).map((t) => (typeof t === 'string' ? t.trim() : t)).filter(Boolean),
     commentsCount: blog.commentsCount || 0
   };
 
@@ -714,18 +714,19 @@ const BlogDetail = () => {
           }
         `}</style>
 
-        {/* Tags with enhanced styling */}
-        <div className="mt-12 flex flex-wrap gap-3">
-          {sanitizedBlog.tags.map((tag, index) => (
-            <Link
-              key={index}
-              to={`/blogs?search=${encodeURIComponent(tag)}`}
-              className="px-3 py-1 bg-amber-50 text-sm text-amber-800 rounded-full hover:bg-amber-100 transition-colors"
-            >
-              #{tag}
-            </Link>
-          ))}
-        </div>
+        {/* Tags (non-clickable; only shown when tags exist) */}
+        {sanitizedBlog.tags.length > 0 && (
+          <div className="mt-12 flex flex-wrap gap-3">
+            {sanitizedBlog.tags.map((tag, index) => (
+              <span
+                key={index}
+                className="px-3 py-1 bg-amber-50 text-sm text-amber-800 rounded-full"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Engagement Footer with enhanced styling */}
         <div className="mt-12 pt-8 border-t border-amber-100">
