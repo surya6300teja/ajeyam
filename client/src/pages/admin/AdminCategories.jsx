@@ -161,7 +161,7 @@ const AdminCategories = () => {
                   type="file"
                   accept="image/png,image/jpeg,image/gif,image/webp"
                   onChange={onPickImage}
-                  className="w-full text-sm text-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-primary file:text-white file:cursor-pointer hover:file:bg-primary-dark"
+                  className="w-full text-sm text-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-[#E78C3D] file:text-white file:font-medium file:cursor-pointer hover:file:bg-[#d37a2e]"
                 />
                 <p className="mt-1 text-xs text-gray-500">JPEG, PNG, GIF or WebP, up to 5MB. {editing && form.imageUrl ? 'Leave empty to keep the current image.' : ''}</p>
               </div>
