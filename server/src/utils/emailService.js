@@ -1,12 +1,17 @@
 const nodemailer = require('nodemailer');
 
+// The SMTP user is configured as EMAIL_USERNAME in the environment, but older
+// code read EMAIL_USER — support both so auth doesn't silently fail.
+const EMAIL_USER = process.env.EMAIL_USER || process.env.EMAIL_USERNAME;
+const EMAIL_FROM = process.env.EMAIL_FROM || EMAIL_USER;
+
 const createTransporter = () => {
     return nodemailer.createTransport({
         host: process.env.EMAIL_HOST || 'smtp.gmail.com',
         port: parseInt(process.env.EMAIL_PORT, 10) || 587,
         secure: false,
         auth: {
-            user: process.env.EMAIL_USER,
+            user: EMAIL_USER,
             pass: process.env.EMAIL_PASSWORD,
         },
     });
@@ -78,7 +83,7 @@ exports.sendPasswordResetEmail = async (toEmail, resetURL) => {
   </html>`;
 
     await transporter.sendMail({
-        from: `"Ajeyam" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+        from: `"Ajeyam" <${EMAIL_FROM}>`,
         to: toEmail,
         subject: 'Reset your password — ajeyam.in',
         html,
@@ -147,7 +152,7 @@ exports.sendSubscriptionWelcomeEmail = async (toEmail) => {
   </html>`;
 
     await transporter.sendMail({
-        from: `"Ajeyam" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+        from: `"Ajeyam" <${EMAIL_FROM}>`,
         to: toEmail,
         subject: 'Welcome to Ajeyam 🙏',
         html,
