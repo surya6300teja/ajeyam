@@ -503,9 +503,9 @@ const BlogDetail = () => {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-12 border-b border-amber-100 pb-8">
           <div className="flex items-center">
             <img
-              src={sanitizedBlog.author?.avatar || 'https://source.unsplash.com/random/40x40'}
+              src={sanitizedBlog.author?.avatar || '/logo.png'}
               alt={sanitizedBlog.author?.name}
-              className="w-12 h-12 rounded-full mr-3 ring-2 ring-amber-50 shadow-sm flex-shrink-0"
+              className="w-12 h-12 rounded-full mr-3 ring-2 ring-amber-50 shadow-sm flex-shrink-0 bg-amber-50 object-cover"
             />
             <div>
               <div className="flex items-center gap-2">
@@ -709,7 +709,7 @@ const BlogDetail = () => {
           {sanitizedBlog.tags.map((tag, index) => (
             <Link
               key={index}
-              to={`/tags/${tag.toLowerCase().replace(' ', '-')}`}
+              to={`/blogs?search=${encodeURIComponent(tag)}`}
               className="px-3 py-1 bg-amber-50 text-sm text-amber-800 rounded-full hover:bg-amber-100 transition-colors"
             >
               #{tag}
@@ -772,9 +772,9 @@ const BlogDetail = () => {
       <div className="max-w-[744px] mx-auto px-4 py-12 border-t border-amber-100">
         <div className="flex items-start gap-6">
           <img
-            src={sanitizedBlog.author?.avatar || 'https://source.unsplash.com/random/80x80'}
+            src={sanitizedBlog.author?.avatar || '/logo.png'}
             alt={sanitizedBlog.author?.name}
-            className="w-20 h-20 rounded-full ring-4 ring-amber-50 shadow-lg"
+            className="w-20 h-20 rounded-full ring-4 ring-amber-50 shadow-lg bg-amber-50 object-cover"
           />
           <div>
             <h3 className="text-xl font-bold text-amber-900 mb-2 font-serif">

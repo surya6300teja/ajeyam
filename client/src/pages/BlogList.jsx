@@ -63,7 +63,7 @@ const BlogList = () => {
     fetchData();
   }, []);
 
-  // Parse category from query params and preselect
+  // Parse category / search from query params and preselect
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const cat = params.get('category');
@@ -74,6 +74,12 @@ const BlogList = () => {
       setCategoryTabs((prev) =>
         prev.includes(cat) ? prev : ['All Categories', cat, ...prev.filter(c => c !== 'All Categories')]
       );
+    }
+    const search = params.get('search');
+    if (search) {
+      setSearchTerm(search);
+      setActiveTab('for-you');
+      setSelectedCategory('All Categories');
     }
   }, [location.search]);
 
@@ -132,7 +138,17 @@ const BlogList = () => {
     return <div className="text-center py-12 text-red-500">{followingError}</div>;
   }
   if (activeTab === 'following' && !followingAuthors.length) {
-    return <div className="text-center py-12">You are not following any authors yet.</div>;
+    return (
+      <div className="text-center py-12">
+        <p className="mb-4">You are not following any authors yet.</p>
+        <button
+          onClick={() => { setActiveTab('for-you'); setSelectedCategory('All Categories'); }}
+          className="inline-flex items-center gap-1 px-4 py-2 border border-amber-900 text-amber-900 rounded-full hover:bg-amber-50 transition-colors text-sm font-medium"
+        >
+          ← Back to For you
+        </button>
+      </div>
+    );
   }
 
   // Function to render a single blog item
@@ -140,16 +156,12 @@ const BlogList = () => {
     <article key={blog._id} className="flex flex-col md:flex-row gap-4 md:gap-8 py-6 border-b border-gray-100">
       {/* Mobile author info (shown only on mobile) */}
       <div className="flex items-center mb-3 md:hidden">
-        <div className="w-6 h-6 bg-amber-700 rounded-full mr-2 flex items-center justify-center text-white text-xs font-bold uppercase overflow-hidden">
-          {blog.author?.avatar ? (
-            <img 
-              src={blog.author.avatar} 
-              alt={blog.author?.name || 'Author'} 
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            blog.author?.name?.charAt(0) || 'A'
-          )}
+        <div className="w-6 h-6 bg-amber-50 rounded-full mr-2 overflow-hidden">
+          <img
+            src={blog.author?.avatar || '/logo.png'}
+            alt={blog.author?.name || 'Author'}
+            className="w-full h-full object-cover"
+          />
         </div>
         <span className="text-sm font-medium">
           {blog.author?.name || 'Unknown Author'}
@@ -169,7 +181,7 @@ const BlogList = () => {
           {/* Desktop author info (hidden on mobile) */}
           <div className="hidden md:flex items-center mb-2">
             <img 
-              src={blog.author?.avatar || 'https://via.placeholder.com/40'} 
+              src={blog.author?.avatar || '/logo.png'}
               alt={blog.author?.name || 'Author'} 
               className="w-6 h-6 rounded-full mr-2"
             />
@@ -257,21 +269,17 @@ const BlogList = () => {
       <div className="flex-1">
         <div className="flex items-center mb-2">
           {/* Mobile avatar with fallback */}
-          <div className="w-5 h-5 bg-amber-700 rounded-full mr-2 flex items-center justify-center text-white text-xs font-bold uppercase overflow-hidden md:hidden">
-            {blog.author?.avatar ? (
-              <img 
-                src={blog.author.avatar} 
-                alt={blog.author?.name || 'Author'} 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              blog.author?.name?.charAt(0) || 'A'
-            )}
+          <div className="w-5 h-5 bg-amber-50 rounded-full mr-2 overflow-hidden md:hidden">
+            <img
+              src={blog.author?.avatar || '/logo.png'}
+              alt={blog.author?.name || 'Author'}
+              className="w-full h-full object-cover"
+            />
           </div>
           {/* Desktop avatar */}
-          <img 
-            src={blog.author?.avatar || 'https://via.placeholder.com/40'} 
-            alt={blog.author?.name || 'Author'} 
+          <img
+            src={blog.author?.avatar || '/logo.png'}
+            alt={blog.author?.name || 'Author'}
             className="hidden md:block w-5 h-5 rounded-full mr-2"
           />
           <span className="text-xs font-medium">

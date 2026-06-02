@@ -153,7 +153,7 @@ const Home = () => {
                 to="/create-blog"
                 className="text-gray-600 hover:text-amber-900 transition-colors duration-300 text-sm sm:text-base"
               >
-                Reveal Untold Stories →
+                Share Your Story →
               </Link>
             </div>
           </div>
