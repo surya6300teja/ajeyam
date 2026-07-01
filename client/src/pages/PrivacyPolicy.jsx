@@ -72,8 +72,8 @@ const PrivacyPolicy = () => {
                         <h2 className="text-2xl font-serif font-bold text-amber-900 mb-4">7. Contact</h2>
                         <p>
                             For privacy-related questions, please contact us at{' '}
-                            <a href="mailto:contact@ajeyam.in" className="text-amber-800 hover:text-amber-700 font-medium">
-                                contact@ajeyam.in
+                            <a href="mailto:editor.ajeyam@gmail.com" className="text-amber-800 hover:text-amber-700 font-medium">
+                                editor.ajeyam@gmail.com
                             </a>.
                         </p>
                     </section>

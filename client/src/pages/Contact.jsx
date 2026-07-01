@@ -22,8 +22,8 @@ const Contact = () => {
                                     </svg>
                                     <div>
                                         <p className="font-medium text-amber-900">Email</p>
-                                        <a href="mailto:contact@ajeyam.in" className="text-gray-600 hover:text-amber-700 transition-colors">
-                                            contact@ajeyam.in
+                                        <a href="mailto:editor.ajeyam@gmail.com" className="text-gray-600 hover:text-amber-700 transition-colors">
+                                            editor.ajeyam@gmail.com
                                         </a>
                                     </div>
                                 </div>
