@@ -59,31 +59,30 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Morgan logging middleware
-app.use(morgan('dev'));
+// Request logging — verbose only in development to avoid per-request overhead
+// (header dumps + wrapping res.send) on every production request.
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    console.log('Request Headers:', JSON.stringify(req.headers));
 
-// Custom request logger middleware
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  console.log('Request Headers:', JSON.stringify(req.headers));
-  
-  // For debugging - log request body for non-GET requests
-  if (req.method !== 'GET') {
-    console.log('Request Body:', JSON.stringify(req.body));
-  }
-  
-  // Capture response for logging
-  const originalSend = res.send;
-  res.send = function(body) {
-    console.log(`[${new Date().toISOString()}] Response Status: ${res.statusCode}`);
-    if (res.statusCode >= 400) {
-      console.log('Response Body:', body);
+    if (req.method !== 'GET') {
+      console.log('Request Body:', JSON.stringify(req.body));
     }
-    originalSend.call(this, body);
-  };
-  
-  next();
-});
+
+    const originalSend = res.send;
+    res.send = function (body) {
+      console.log(`[${new Date().toISOString()}] Response Status: ${res.statusCode}`);
+      if (res.statusCode >= 400) {
+        console.log('Response Body:', body);
+      }
+      originalSend.call(this, body);
+    };
+
+    next();
+  });
+}
 
 // Serve static files from uploads directory with proper headers for sharing
 app.use('/uploads', (req, res, next) => {

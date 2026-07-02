@@ -280,9 +280,13 @@ exports.getBlogsByCategory = async (req, res) => {
       category: { $in: categoryIds },
       status: 'published'
     })
+      .select('-content -likes')
+      .populate('author', 'name avatar')
+      .populate('category', 'name')
       .sort({ publishedAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
     
     // Get total count for pagination
     const total = await Blog.countDocuments({

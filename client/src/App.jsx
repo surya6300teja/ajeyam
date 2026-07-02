@@ -1,32 +1,43 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
-import Home from './pages/Home';
-import BlogList from './pages/BlogList';
-import BlogDetail from './pages/BlogDetail';
-import CreateBlog from './pages/CreateBlog';
-import Login from './pages/Login';
-import Signup from './pages/SignUp';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import Categories from './pages/Categories';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import Profile from './pages/Profile';
-import BookReviewsList from './pages/BookReviewsList';
-import BookReviewDetail from './pages/BookReviewDetail';
-import CreateBookReview from './pages/CreateBookReview';
-import MyBookReviews from './pages/MyBookReviews';
-import AdminBookReviews from './pages/admin/AdminBookReviews';
-import AdminCategories from './pages/admin/AdminCategories';
-import About from './pages/About';
-import TermsOfService from './pages/TermsOfService';
-import Contact from './pages/Contact';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import NotFound from './pages/NotFound';
-import CategoryRedirect from './pages/CategoryRedirect';
+
+// Route components are code-split so heavy pages (e.g. the TipTap editor on
+// /create-blog, admin dashboards) don't load on every page.
+const Home = lazy(() => import('./pages/Home'));
+const BlogList = lazy(() => import('./pages/BlogList'));
+const BlogDetail = lazy(() => import('./pages/BlogDetail'));
+const CreateBlog = lazy(() => import('./pages/CreateBlog'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/SignUp'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const Categories = lazy(() => import('./pages/Categories'));
+const Profile = lazy(() => import('./pages/Profile'));
+const BookReviewsList = lazy(() => import('./pages/BookReviewsList'));
+const BookReviewDetail = lazy(() => import('./pages/BookReviewDetail'));
+const CreateBookReview = lazy(() => import('./pages/CreateBookReview'));
+const MyBookReviews = lazy(() => import('./pages/MyBookReviews'));
+const AdminBookReviews = lazy(() => import('./pages/admin/AdminBookReviews'));
+const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'));
+const About = lazy(() => import('./pages/About'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const Contact = lazy(() => import('./pages/Contact'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const CategoryRedirect = lazy(() => import('./pages/CategoryRedirect'));
+
+const RouteFallback = () => (
+  <div className="min-h-[60vh] flex items-center justify-center bg-[#FBF7F4]">
+    <div className="w-10 h-10 border-4 border-amber-900/20 border-l-amber-900 rounded-full animate-spin"></div>
+  </div>
+);
 
 function App() {
   return (
+    <Suspense fallback={<RouteFallback />}>
     <Routes>
       <Route path="/" element={<MainLayout />}>
         {/* Public routes */}
@@ -69,6 +80,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
+    </Suspense>
   );
 }
 

@@ -13,59 +13,96 @@ import { useAuth } from '../context/AuthContext';
 //   'Modern History',
 // ];
 
+const PAGE_SIZE = 10;
+
 const BlogList = () => {
   const [blogs, setBlogs] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('for-you');
   const { currentUser } = useAuth();
   const [followingAuthors, setFollowingAuthors] = useState([]);
   const [followingLoading, setFollowingLoading] = useState(false);
   const [followingError, setFollowingError] = useState(null);
-  const [categoryTabs, setCategoryTabs] = useState(['All Categories']); // start with 'All Categories'
+  const [categories, setCategories] = useState([]); // full objects { _id, name }
+  const [categoryTabs, setCategoryTabs] = useState(['All Categories']);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const location = useLocation();
 
+  // Load category list once (for tabs + name -> id mapping used in queries)
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch blogs. The page filters by category/search/following on the
-        // client, so we need the full set loaded — otherwise the default page
-        // of 10 makes most categories look empty. (List excludes heavy
-        // `content` server-side; revisit with server-side paging if the
-        // catalogue grows much larger.)
-        const blogsResponse = await api.axios.get('/blogs', { params: { limit: 1000 } });
-        const fetchedBlogs = blogsResponse.data.data.blogs || [];
-        setBlogs(fetchedBlogs);
-
-        // Fetch categories
-        const categoriesResponse = await api.categories.getAllCategories();
-        let fetchedCategories = [];
-        if (categoriesResponse.data && categoriesResponse.data.data) {
-          fetchedCategories = categoriesResponse.data.data.categories.map(c => c.name);
-        } else if (categoriesResponse.data && Array.isArray(categoriesResponse.data)) {
-          fetchedCategories = categoriesResponse.data.map(c => c.name);
-        } else if (categoriesResponse.data && categoriesResponse.data.categories) {
-          fetchedCategories = categoriesResponse.data.categories.map(c => c.name);
-        }
-
-        // Merge with "All Categories" and set tabs
-        setCategoryTabs(['All Categories', ...fetchedCategories]);
-
-      } catch (err) {
-        console.error('Failed to fetch blogs or categories:', err);
-        setError(err.message || 'Something went wrong.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    api.categories.getAllCategories()
+      .then((res) => {
+        const cats =
+          res?.data?.data?.categories ||
+          res?.data?.categories ||
+          (Array.isArray(res?.data) ? res.data : []);
+        setCategories(cats);
+        setCategoryTabs(['All Categories', ...cats.map((c) => c.name)]);
+      })
+      .catch(() => {/* tabs stay minimal on failure */});
   }, []);
+
+  // Debounce the search box so we don't refetch on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Build the server query for the current view (category/search filtered server-side)
+  const buildParams = (pageNum) => {
+    const params = { page: pageNum, limit: PAGE_SIZE };
+    if (activeTab !== 'following' && selectedCategory !== 'All Categories') {
+      const match = categories.find((c) => c.name.toLowerCase() === selectedCategory.toLowerCase());
+      if (match?._id) params.category = match._id;
+    }
+    if (debouncedSearch) params.search = debouncedSearch;
+    return params;
+  };
+
+  // Fetch the first page whenever the view (tab / category / search) changes.
+  // This keeps payloads small — we no longer download the whole catalogue.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await api.axios.get('/blogs', { params: buildParams(1) });
+        if (!active) return;
+        setBlogs(res.data.data.blogs || []);
+        setPage(1);
+        setHasMore(res.data.pagination?.hasNextPage ?? false);
+      } catch (err) {
+        if (active) setError(err.message || 'Something went wrong.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, selectedCategory, debouncedSearch, categories]);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const next = page + 1;
+      const res = await api.axios.get('/blogs', { params: buildParams(next) });
+      setBlogs((prev) => [...prev, ...(res.data.data.blogs || [])]);
+      setPage(next);
+      setHasMore(res.data.pagination?.hasNextPage ?? false);
+    } catch {
+      /* keep current list on error */
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   // Parse category / search from query params and preselect
   useEffect(() => {
@@ -74,7 +111,6 @@ const BlogList = () => {
     if (cat) {
       setSelectedCategory(cat);
       setActiveTab(cat.toLowerCase().replace(/\s+/g, '-'));
-      // Add it temporarily if not in tabs
       setCategoryTabs((prev) =>
         prev.includes(cat) ? prev : ['All Categories', cat, ...prev.filter(c => c !== 'All Categories')]
       );
@@ -87,7 +123,7 @@ const BlogList = () => {
     }
   }, [location.search]);
 
-  // Following tab logic
+  // Following tab: load the authors you follow (filtered client-side below)
   useEffect(() => {
     if (activeTab === 'following' && currentUser?._id) {
       setFollowingLoading(true);
@@ -99,22 +135,12 @@ const BlogList = () => {
     }
   }, [activeTab, currentUser]);
 
-  // Filter blogs based on search and category
-  const filteredBlogs = blogs
-    .filter(blog => {
-      if (activeTab === 'following') {
-        if (followingLoading || followingError) return false;
-        if (!followingAuthors.length) return false;
-        return followingAuthors.some(author => author._id === blog.author?._id);
-      }
-      const blogCategoryName = typeof blog.category === 'string' ? blog.category : (blog.category?.name || '');
-      return (
-        (selectedCategory === 'All Categories' || blogCategoryName.toLowerCase() === selectedCategory.toLowerCase()) &&
-        (blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (blog.summary || '').toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    })
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  // Server already filters by category/search and sorts by date. Only the
+  // Following tab needs an extra client-side filter over the loaded pages.
+  const filteredBlogs = activeTab === 'following'
+    ? blogs.filter(blog =>
+        !followingLoading && !followingError && followingAuthors.some(a => a._id === blog.author?._id))
+    : blogs;
 
   if (loading) {
     return (
@@ -255,9 +281,11 @@ const BlogList = () => {
         
         {blog.coverImage && (
           <div className="w-20 h-20 md:w-56 md:h-32 rounded-sm md:rounded-lg overflow-hidden flex-shrink-0">
-            <img 
-              src={blog.coverImage} 
+            <img
+              src={blog.coverImage}
               alt={blog.title}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover"
             />
           </div>
@@ -411,6 +439,19 @@ const BlogList = () => {
             </div>
           )}
         </div>
+
+        {/* Load more */}
+        {hasMore && activeTab !== 'following' && filteredBlogs.length > 0 && (
+          <div className="text-center pt-6 sm:pt-8">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="px-6 py-2.5 border border-amber-900 text-amber-900 rounded-full hover:bg-amber-50 transition-colors text-sm font-medium disabled:opacity-60"
+            >
+              {loadingMore ? 'Loading…' : 'Load more'}
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );
