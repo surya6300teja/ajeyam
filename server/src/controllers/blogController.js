@@ -88,6 +88,10 @@ exports.getAllBlogs = async (req, res) => {
     // Get total count for pagination
     const total = await Blog.countDocuments(query);
 
+    // Let the browser cache list pages briefly (per-user, since admins see
+    // extra statuses). Speeds up reloads/back without serving stale content
+    // across users.
+    res.set('Cache-Control', 'private, max-age=30');
     res.status(200).json({
       status: 'success',
       results: blogs.length,
@@ -305,6 +309,7 @@ exports.getFeaturedBlogs = async (req, res) => {
       .limit(limit)
       .lean();
 
+    res.set('Cache-Control', 'private, max-age=60');
     res.status(200).json({
       status: 'success',
       results: featuredBlogs.length,

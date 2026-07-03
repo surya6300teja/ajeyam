@@ -38,7 +38,9 @@ exports.getAllCategories = async (req, res) => {
     
     // Execute query
     const categories = await Category.find(query).sort('order');
-    
+
+    // Categories change rarely and load on every page — cache briefly.
+    res.set('Cache-Control', 'private, max-age=120');
     res.status(200).json({
       status: 'success',
       results: categories.length,

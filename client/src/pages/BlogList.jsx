@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import api from '../services/api';
+import { cacheKey, peekCache, putCache } from '../services/cache';
 import '../styles/blog.css';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,11 +17,14 @@ import { useAuth } from '../context/AuthContext';
 const PAGE_SIZE = 10;
 
 const BlogList = () => {
-  const [blogs, setBlogs] = useState([]);
+  // Seed the default "For you" view from cache so returning to /blogs renders
+  // instantly instead of flashing the full-page loader.
+  const initialCached = peekCache(cacheKey('/blogs', { page: 1, limit: PAGE_SIZE }));
+  const [blogs, setBlogs] = useState(initialCached?.blogs || []);
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialCached);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('for-you');
@@ -31,7 +35,7 @@ const BlogList = () => {
   const [categories, setCategories] = useState([]); // full objects { _id, name }
   const [categoryTabs, setCategoryTabs] = useState(['All Categories']);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState(initialCached?.hasMore || false);
   const location = useLocation();
 
   // Load category list once (for tabs + name -> id mapping used in queries)
@@ -66,20 +70,39 @@ const BlogList = () => {
   };
 
   // Fetch the first page whenever the view (tab / category / search) changes.
-  // This keeps payloads small — we no longer download the whole catalogue.
+  // Payloads stay small (one page), and a per-session cache makes repeat
+  // views (tab switches, back-navigation) instant — served from cache and
+  // revalidated in the background, so no full-page loader flashes.
   useEffect(() => {
     let active = true;
-    (async () => {
+    const params = buildParams(1);
+    const key = cacheKey('/blogs', params);
+    const cached = peekCache(key);
+
+    if (cached) {
+      setBlogs(cached.blogs);
+      setPage(1);
+      setHasMore(cached.hasMore);
+      setLoading(false);
+    } else {
       setLoading(true);
-      setError(null);
+    }
+    setError(null);
+
+    (async () => {
       try {
-        const res = await api.axios.get('/blogs', { params: buildParams(1) });
+        const res = await api.axios.get('/blogs', { params });
         if (!active) return;
-        setBlogs(res.data.data.blogs || []);
+        const data = {
+          blogs: res.data.data.blogs || [],
+          hasMore: res.data.pagination?.hasNextPage ?? false,
+        };
+        putCache(key, data);
+        setBlogs(data.blogs);
         setPage(1);
-        setHasMore(res.data.pagination?.hasNextPage ?? false);
+        setHasMore(data.hasMore);
       } catch (err) {
-        if (active) setError(err.message || 'Something went wrong.');
+        if (active && !cached) setError(err.message || 'Something went wrong.');
       } finally {
         if (active) setLoading(false);
       }
