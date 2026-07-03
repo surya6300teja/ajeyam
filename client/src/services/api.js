@@ -108,6 +108,12 @@ const blogAPI = {
   createBlog: (blogData) => api.post('/blogs', blogData),
   updateBlog: (id, blogData) => api.patch(`/blogs/${id}`, blogData),
   deleteBlog: (id) => api.delete(`/blogs/${id}`),
+  // Upload a cover/inline image file; returns { data: { url } }
+  uploadCoverImage: (file) => {
+    const form = new FormData();
+    form.append('coverImage', file);
+    return api.post('/blogs/upload-cover', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
   toggleLike: (id) => api.post(`/blogs/${id}/like`),
   getBlogsByCategory: (categoryId, params) => api.get(`/categories/${categoryId}/blogs`, { params }),
   getBlogsByAuthor: (authorId, params) => api.get(`/users/${authorId}/blogs`, { params }),

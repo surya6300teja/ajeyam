@@ -11,6 +11,7 @@ import { NodeSelection } from '@tiptap/pm/state';
 import './BlogEditor.css';
 import ReactDOM from 'react-dom';
 import React from 'react';
+import api from '../../services/api';
 
 // Custom FontSize extension — applies as a mark (inline style) so it only
 // affects the current selection or future typing at the cursor, not all text.
@@ -459,30 +460,26 @@ const BlogEditor = ({ initialContent = '', initialData = null, onSave, categorie
     input.onchange = async () => {
       if (input.files?.length) {
         const file = input.files[0];
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-          if (editor && e.target?.result) {
-            // Save the image with full base64 data to ensure accessibility from social platforms
-            const imageUrl = e.target.result;
-
+        try {
+          // Upload the image as a file and insert its URL (not base64) so
+          // article content stays lightweight.
+          const res = await api.blogs.uploadCoverImage(file);
+          const imageUrl = res?.data?.data?.url;
+          if (editor && imageUrl) {
             editor
               .chain()
               .focus()
               .setImage({
                 src: imageUrl,
                 alt: file.name,
-                alignment: 'center', // Default to center alignment for better sharing
-                width: 'auto', // Default width
+                alignment: 'center',
+                width: 'auto',
               })
               .run();
-
-            console.log('Image added with URL format that should work for sharing:',
-              imageUrl.substring(0, 30) + '...');
           }
-        };
-
-        reader.readAsDataURL(file);
+        } catch (err) {
+          alert('Failed to upload image. Please try again.');
+        }
       }
     };
 
@@ -497,15 +494,14 @@ const BlogEditor = ({ initialContent = '', initialData = null, onSave, categorie
     input.onchange = async () => {
       if (input.files?.length) {
         const file = input.files[0];
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            setFeaturedImage(e.target.result);
-          }
-        };
-
-        reader.readAsDataURL(file);
+        try {
+          // Upload as a file and store the returned URL (not base64).
+          const res = await api.blogs.uploadCoverImage(file);
+          const url = res?.data?.data?.url;
+          if (url) setFeaturedImage(url);
+        } catch (err) {
+          alert('Failed to upload cover image. Please try again.');
+        }
       }
     };
 

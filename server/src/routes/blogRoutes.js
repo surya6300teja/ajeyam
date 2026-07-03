@@ -4,6 +4,7 @@ const blogController = require('../controllers/blogController');
 const authController = require('../controllers/authController');
 const commentRoutes = require('./commentRoutes');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
+const { uploadBlogImage } = require('../utils/fileUpload');
 
 // =======================
 // Admin-only routes
@@ -36,6 +37,8 @@ router.get('/:identifier', blogController.getBlog);
 // =======================
 router.use(authController.protect);
 
+// Upload a cover/inline image file, returns { url } to store on the blog
+router.post('/upload-cover', uploadBlogImage, blogController.uploadCoverImage);
 router.post('/', blogController.createBlog);
 router.post('/:id/like', blogController.toggleLike);
 router.patch('/:id', blogController.updateBlog);

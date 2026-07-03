@@ -1,6 +1,17 @@
 const mongoose = require('mongoose');
 const Blog = require('../models/Blog');
 const Comment = require('../models/Comment');
+const { getFileUrl } = require('../utils/fileUpload');
+
+// Upload a blog image (cover or inline) as a file and return its URL.
+// Lets the editor store a short URL instead of a base64 blob in the DB.
+exports.uploadCoverImage = (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ status: 'error', message: 'No image file provided' });
+  }
+  const url = getFileUrl(req, `uploads/blogs/${req.file.filename}`);
+  res.status(200).json({ status: 'success', data: { url } });
+};
 
 // Get all blogs with filters, sorting, and pagination
 exports.getAllBlogs = async (req, res) => {
