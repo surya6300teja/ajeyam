@@ -1,6 +1,24 @@
 const User = require('../models/User');
 const Blog = require('../models/Blog');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
+
+// If the avatar arrives as a base64 data URI (the profile form sends
+// FileReader output), persist it as a file and return its URL instead —
+// base64 avatars stored on the User doc bloat every populated response.
+const persistAvatarIfBase64 = (req, avatar) => {
+  const match = /^data:image\/([A-Za-z0-9.+-]+);base64,(.+)$/s.exec(avatar || '');
+  if (!match) return avatar;
+  let ext = match[1].toLowerCase();
+  if (ext === 'jpeg') ext = 'jpg';
+  if (ext === 'svg+xml') ext = 'svg';
+  const dir = path.join(__dirname, '../../uploads/avatars');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const filename = `avatar-${req.user.id}-${Date.now()}.${ext}`;
+  fs.writeFileSync(path.join(dir, filename), Buffer.from(match[2], 'base64'));
+  return `${req.protocol}://${req.get('host')}/uploads/avatars/${filename}`;
+};
 
 // Helper function to sign JWT token
 const signToken = (id) => {
@@ -115,6 +133,11 @@ exports.updateMe = async (req, res) => {
         filteredBody[field] = req.body[field];
       }
     });
+
+    // Store avatar as a file URL, never as an inline base64 blob
+    if (filteredBody.avatar) {
+      filteredBody.avatar = persistAvatarIfBase64(req, filteredBody.avatar);
+    }
 
     // Update user document
     const updatedUser = await User.findByIdAndUpdate(

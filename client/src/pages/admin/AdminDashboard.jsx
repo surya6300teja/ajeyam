@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { peekCache, putCache } from '../../services/cache';
+
+const DASH_CACHE_KEY = 'admin-dashboard-blogs';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -40,9 +43,19 @@ const AdminDashboard = () => {
   // Authors & Subscribers are fetched lazily when their tabs are opened.
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) return;
+
+    // Serve instantly from the per-session cache, then revalidate quietly.
+    const cached = peekCache(DASH_CACHE_KEY);
+    if (cached) {
+      setPendingBlogs(cached.pending);
+      setPublishedBlogs(cached.published);
+      setStats(s => ({ ...s, ...cached.stats }));
+      setLoading(false);
+    }
+
     const fetchBlogs = async () => {
       try {
-        setLoading(true);
+        if (!cached) setLoading(true);
         setError(null);
         const headers = { 'Authorization': `Bearer ${token}` };
         const [pendingBlogsResponse, publishedBlogsResponse] = await Promise.all([
@@ -57,16 +70,17 @@ const AdminDashboard = () => {
 
         const filteredPending = (pendingBlogsResponse.data.data.blogs || []).filter(blog => blog.status === 'pending');
         const blogs = publishedBlogsResponse.data.data.blogs || [];
-        setPendingBlogs(filteredPending);
-        setPublishedBlogs(blogs);
-        setStats(s => ({
-          ...s,
+        const nextStats = {
           totalBlogs: blogs.length,
           pendingBlogs: filteredPending.length,
           totalViews: blogs.reduce((sum, blog) => sum + (blog.views || 0), 0),
           totalLikes: blogs.reduce((sum, blog) => sum + (blog.likesCount || 0), 0),
           totalComments: blogs.reduce((sum, blog) => sum + (blog.commentsCount || 0), 0),
-        }));
+        };
+        setPendingBlogs(filteredPending);
+        setPublishedBlogs(blogs);
+        setStats(s => ({ ...s, ...nextStats }));
+        putCache(DASH_CACHE_KEY, { pending: filteredPending, published: blogs, stats: nextStats });
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Failed to load dashboard data. Please try again.');
