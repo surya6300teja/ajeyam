@@ -139,7 +139,9 @@ const ImageOptions = ({ editor, node, setImageWidth, setImageAlignment }) => (
   </div>
 );
 
-const DRAFT_STORAGE_KEY = 'blog_draft';
+// v2: the old 'blog_draft' key was polluted by edit-mode autosaves, so
+// abandon it. New drafts only come from genuine create-mode edits.
+const DRAFT_STORAGE_KEY = 'blog_draft_v2';
 
 const BlogEditor = ({ initialContent = '', initialData = null, onSave, categories = [], errorMessage = '' }) => {
   const [title, setTitle] = useState('');
@@ -398,6 +400,10 @@ const BlogEditor = ({ initialContent = '', initialData = null, onSave, categorie
 
   const saveDraft = () => {
     if (!editor) return;
+    // Never autosave a draft while editing an existing blog — otherwise the
+    // edited blog's data overwrites the "new blog" draft and shows up when
+    // you next open Create Blog.
+    if (initialData) return;
     const draft = {
       title,
       category,
@@ -524,6 +530,10 @@ const BlogEditor = ({ initialContent = '', initialData = null, onSave, categorie
 
     if (onSave) {
       onSave(blogData);
+      // Clear the create-mode draft once submitted so the next new post is blank
+      if (!initialData) {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+      }
     }
   };
 

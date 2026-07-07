@@ -14,6 +14,10 @@ const AdminDashboard = () => {
   const [authors, setAuthors] = useState([]);
   const [subscribers, setSubscribers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [authorsLoaded, setAuthorsLoaded] = useState(false);
+  const [subscribersLoaded, setSubscribersLoaded] = useState(false);
+  const [authorsLoading, setAuthorsLoading] = useState(false);
+  const [subscribersLoading, setSubscribersLoading] = useState(false);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
     totalAuthors: 0,
@@ -32,19 +36,16 @@ const AdminDashboard = () => {
     }
   }, [isAuthenticated, isAdmin, navigate]);
 
-  // Fetch data from API
+  // On mount, load ONLY the blog data (Overview / Pending / Published).
+  // Authors & Subscribers are fetched lazily when their tabs are opened.
   useEffect(() => {
-    const fetchData = async () => {
+    if (!isAuthenticated || !isAdmin) return;
+    const fetchBlogs = async () => {
       try {
         setLoading(true);
         setError(null);
-        const headers = {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        };
-
-        // Fetch all data in parallel for speed
-        const [pendingBlogsResponse, publishedBlogsResponse, authorsResponse, subscribersResponse] = await Promise.all([
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const [pendingBlogsResponse, publishedBlogsResponse] = await Promise.all([
           api.axios.get('/blogs/pending?limit=20', { headers }).catch(err => {
             if (err.response?.status === 404) {
               return api.axios.get('/blogs?status=pending&limit=20', { headers });
@@ -52,29 +53,20 @@ const AdminDashboard = () => {
             throw err;
           }),
           api.axios.get('/blogs?status=published&limit=20', { headers }),
-          api.users.getAuthors(),
-          api.subscribers.list(),
         ]);
 
         const filteredPending = (pendingBlogsResponse.data.data.blogs || []).filter(blog => blog.status === 'pending');
-        const authorsList = authorsResponse.data.data.authors || [];
-        const subscribersList = subscribersResponse.data.data.subscribers || [];
-        setPendingBlogs(filteredPending);
-        setPublishedBlogs(publishedBlogsResponse.data.data.blogs || []);
-        setAuthors(authorsList);
-        setSubscribers(subscribersList);
-
-        // Calculate stats
         const blogs = publishedBlogsResponse.data.data.blogs || [];
-        setStats({
-          totalAuthors: authorsList.length,
-          totalSubscribers: subscribersList.length,
+        setPendingBlogs(filteredPending);
+        setPublishedBlogs(blogs);
+        setStats(s => ({
+          ...s,
           totalBlogs: blogs.length,
           pendingBlogs: filteredPending.length,
           totalViews: blogs.reduce((sum, blog) => sum + (blog.views || 0), 0),
           totalLikes: blogs.reduce((sum, blog) => sum + (blog.likesCount || 0), 0),
           totalComments: blogs.reduce((sum, blog) => sum + (blog.commentsCount || 0), 0),
-        });
+        }));
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Failed to load dashboard data. Please try again.');
@@ -82,11 +74,38 @@ const AdminDashboard = () => {
         setLoading(false);
       }
     };
-
-    if (isAuthenticated && isAdmin) {
-      fetchData();
-    }
+    fetchBlogs();
   }, [isAuthenticated, isAdmin, token]);
+
+  // Lazily load Authors / Subscribers the first time each tab is opened.
+  useEffect(() => {
+    if (!isAuthenticated || !isAdmin) return;
+    if (activeTab === 'authors' && !authorsLoaded && !authorsLoading) {
+      setAuthorsLoading(true);
+      api.users.getAuthors()
+        .then(res => {
+          const list = res.data.data.authors || [];
+          setAuthors(list);
+          setStats(s => ({ ...s, totalAuthors: list.length }));
+          setAuthorsLoaded(true);
+        })
+        .catch(() => setError('Failed to load authors.'))
+        .finally(() => setAuthorsLoading(false));
+    }
+    if (activeTab === 'subscribers' && !subscribersLoaded && !subscribersLoading) {
+      setSubscribersLoading(true);
+      api.subscribers.list()
+        .then(res => {
+          const list = res.data.data.subscribers || [];
+          setSubscribers(list);
+          setStats(s => ({ ...s, totalSubscribers: list.length }));
+          setSubscribersLoaded(true);
+        })
+        .catch(() => setError('Failed to load subscribers.'))
+        .finally(() => setSubscribersLoading(false));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isAuthenticated, isAdmin]);
 
   // Admin action handlers with API calls
   const handleApproveBlog = async (id) => {
@@ -282,10 +301,10 @@ const AdminDashboard = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-gray-50 p-6 rounded-lg">
-                  <h3 className="text-lg font-medium mb-2">Community</h3>
+                  <h3 className="text-lg font-medium mb-2">Pending Review</h3>
                   <div className="flex items-end justify-between">
-                    <span className="text-3xl font-bold">{stats.totalAuthors}</span>
-                    <span className="text-sm text-gray-500">authors · {stats.totalSubscribers} subscribers</span>
+                    <span className="text-3xl font-bold">{stats.pendingBlogs}</span>
+                    <span className="text-sm text-gray-500">awaiting approval</span>
                   </div>
                 </div>
 
@@ -490,12 +509,16 @@ const AdminDashboard = () => {
           )}
 
           {/* User Management Tab */}
-          {!loading && !error && activeTab === 'authors' && (
+          {!error && activeTab === 'authors' && (
             <div>
               <h2 className="text-xl font-bold font-serif mb-6">
                 Authors <span className="text-sm font-normal text-gray-500">({authors.length} contributors)</span>
               </h2>
-              {authors.length === 0 ? (
+              {authorsLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="w-8 h-8 border-4 border-amber-900/20 border-l-amber-900 rounded-full animate-spin"></div>
+                </div>
+              ) : authors.length === 0 ? (
                 <p className="text-gray-500">No authors yet.</p>
               ) : (
                 <div className="overflow-x-auto">
@@ -531,7 +554,7 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {!loading && !error && activeTab === 'subscribers' && (
+          {!error && activeTab === 'subscribers' && (
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold font-serif">
@@ -553,7 +576,11 @@ const AdminDashboard = () => {
                   </button>
                 )}
               </div>
-              {subscribers.length === 0 ? (
+              {subscribersLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="w-8 h-8 border-4 border-amber-900/20 border-l-amber-900 rounded-full animate-spin"></div>
+                </div>
+              ) : subscribers.length === 0 ? (
                 <p className="text-gray-500">No subscribers yet.</p>
               ) : (
                 <div className="overflow-x-auto">
