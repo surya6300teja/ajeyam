@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Blog = require('../models/Blog');
 const Comment = require('../models/Comment');
+const User = require('../models/User');
 const { getFileUrl } = require('../utils/fileUpload');
 const { notifyNewBlogPublished } = require('../utils/blogNotifier');
 
@@ -404,6 +405,13 @@ exports.getBlogsByAuthor = async (req, res) => {
       status: 'published'
     });
 
+    // Public author info for the author profile page (works even with 0 blogs)
+    let author = blogs[0]?.author || null;
+    if (!author && mongoose.Types.ObjectId.isValid(req.params.authorId)) {
+      author = await User.findById(req.params.authorId).select('name avatar bio').lean();
+    }
+
+    res.set('Cache-Control', 'private, max-age=30');
     res.status(200).json({
       status: 'success',
       results: blogs.length,
@@ -415,7 +423,7 @@ exports.getBlogsByAuthor = async (req, res) => {
         hasNextPage: page < Math.ceil(total / limit),
         hasPrevPage: page > 1
       },
-      data: { blogs }
+      data: { author, blogs }
     });
   } catch (error) {
     res.status(500).json({

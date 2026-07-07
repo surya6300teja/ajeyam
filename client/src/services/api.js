@@ -117,6 +117,8 @@ const blogAPI = {
   toggleLike: (id) => api.post(`/blogs/${id}/like`),
   getBlogsByCategory: (categoryId, params) => api.get(`/categories/${categoryId}/blogs`, { params }),
   getBlogsByAuthor: (authorId, params) => api.get(`/users/${authorId}/blogs`, { params }),
+  // Public author profile + their published blogs (no auth required)
+  getPublicAuthorBlogs: (authorId, params) => api.get(`/blogs/author/${authorId}`, { params }),
   getBlogsByTag: (tag, params) => api.get(`/blogs/tags/${tag}`, { params }),
   searchBlogs: (query, params) => api.get(`/blogs/search`, { params: { query, ...params } }),
 };

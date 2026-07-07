@@ -13,7 +13,10 @@ const Comments = ({ blogId, initialCount = 0 }) => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [replySubmitting, setReplySubmitting] = useState(false);
+
   // Fix the issue with isAuthenticated not being a function
   const userIsAuthenticated = typeof isAuthenticated === 'function' 
     ? isAuthenticated() 
@@ -110,6 +113,38 @@ const Comments = ({ blogId, initialCount = 0 }) => {
     }
   };
   
+  const handleReplySubmit = async (parentId) => {
+    if (!replyText.trim()) return;
+    setReplySubmitting(true);
+    try {
+      const response = await api.comments.createComment(blogId, {
+        content: replyText.trim(),
+        parentComment: parentId,
+      });
+      let reply;
+      if (response.data?.data?.comment) reply = response.data.data.comment;
+      else if (response.data?.comment) reply = response.data.comment;
+      else reply = {
+        _id: `temp-${Date.now()}`,
+        content: replyText.trim(),
+        createdAt: new Date().toISOString(),
+        likesCount: 0,
+        user: currentUser,
+      };
+      setComments(prev => prev.map(c =>
+        c._id === parentId ? { ...c, replies: [...(c.replies || []), reply] } : c
+      ));
+      setReplyText('');
+      setReplyingTo(null);
+      setCommentCount(n => n + 1);
+    } catch (err) {
+      console.error('Error posting reply:', err);
+      alert('Failed to post reply. Please try again.');
+    } finally {
+      setReplySubmitting(false);
+    }
+  };
+
   const handleLikeComment = async (commentId) => {
     if (!userIsAuthenticated) {
       alert('Please sign in to like comments');
@@ -332,12 +367,64 @@ const Comments = ({ blogId, initialCount = 0 }) => {
                       <span>{comment.likesCount || 0}</span>
                     </button>
                     {userIsAuthenticated && (
-                      <button className="text-sm text-gray-500 hover:text-primary">
+                      <button
+                        className="text-sm text-gray-500 hover:text-primary"
+                        onClick={() => {
+                          setReplyingTo(replyingTo === comment._id ? null : comment._id);
+                          setReplyText('');
+                        }}
+                      >
                         Reply
                       </button>
                     )}
                   </div>
                 </div>
+
+                {/* Reply form */}
+                {replyingTo === comment._id && (
+                  <div className="mt-3 ml-2 flex gap-2">
+                    <input
+                      type="text"
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder="Write a reply…"
+                      autoFocus
+                      className="flex-grow px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleReplySubmit(comment._id); }}
+                    />
+                    <button
+                      onClick={() => handleReplySubmit(comment._id)}
+                      disabled={replySubmitting || !replyText.trim()}
+                      className="px-4 py-2 bg-amber-900 text-white rounded-md text-sm disabled:opacity-60"
+                    >
+                      {replySubmitting ? '…' : 'Reply'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Replies */}
+                {comment.replies && comment.replies.length > 0 && (
+                  <div className="mt-3 ml-2 space-y-3 border-l-2 border-amber-100 pl-4">
+                    {comment.replies.map((reply) => (
+                      <div key={reply._id} className="flex gap-3">
+                        <img
+                          src={reply.user?.avatar || '/logo.png'}
+                          alt={reply.user?.name || 'User'}
+                          className="w-8 h-8 rounded-full flex-shrink-0 bg-amber-50 object-cover"
+                        />
+                        <div className="bg-gray-50 p-3 rounded-md flex-grow">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-medium text-sm text-text">{reply.user?.name || 'Anonymous'}</span>
+                            <span className="text-xs text-gray-400">
+                              {new Date(reply.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 text-sm">{reply.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}

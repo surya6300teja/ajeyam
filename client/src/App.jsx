@@ -28,6 +28,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const CategoryRedirect = lazy(() => import('./pages/CategoryRedirect'));
+const AuthorProfile = lazy(() => import('./pages/AuthorProfile'));
 
 const RouteFallback = () => (
   <div className="min-h-[60vh] flex items-center justify-center bg-[#FBF7F4]">
@@ -44,6 +45,7 @@ function App() {
         <Route index element={<Home />} />
         <Route path="blogs" element={<BlogList />} />
         <Route path="blogs/:id" element={<BlogDetail />} />
+        <Route path="authors/:id" element={<AuthorProfile />} />
         <Route path="categories" element={<Categories />} />
         {/* Legacy category links (e.g. /categories/medieval-india) now redirect
             to the filtered blog list instead of rendering a blank page. */}
