@@ -11,12 +11,13 @@ const AdminDashboard = () => {
   // State for storing API data
   const [pendingBlogs, setPendingBlogs] = useState([]);
   const [publishedBlogs, setPublishedBlogs] = useState([]);
-  const [registeredUsers, setRegisteredUsers] = useState([]);
+  const [authors, setAuthors] = useState([]);
+  const [subscribers, setSubscribers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeUsers: 0,
+    totalAuthors: 0,
+    totalSubscribers: 0,
     totalBlogs: 0,
     pendingBlogs: 0,
     totalViews: 0,
@@ -43,7 +44,7 @@ const AdminDashboard = () => {
         };
 
         // Fetch all data in parallel for speed
-        const [pendingBlogsResponse, publishedBlogsResponse, usersResponse] = await Promise.all([
+        const [pendingBlogsResponse, publishedBlogsResponse, authorsResponse, subscribersResponse] = await Promise.all([
           api.axios.get('/blogs/pending?limit=20', { headers }).catch(err => {
             if (err.response?.status === 404) {
               return api.axios.get('/blogs?status=pending&limit=20', { headers });
@@ -51,21 +52,23 @@ const AdminDashboard = () => {
             throw err;
           }),
           api.axios.get('/blogs?status=published&limit=20', { headers }),
-          api.axios.get('/users', { headers })
+          api.users.getAuthors(),
+          api.subscribers.list(),
         ]);
 
         const filteredPending = (pendingBlogsResponse.data.data.blogs || []).filter(blog => blog.status === 'pending');
+        const authorsList = authorsResponse.data.data.authors || [];
+        const subscribersList = subscribersResponse.data.data.subscribers || [];
         setPendingBlogs(filteredPending);
         setPublishedBlogs(publishedBlogsResponse.data.data.blogs || []);
-        setRegisteredUsers(usersResponse.data.data.users || []);
+        setAuthors(authorsList);
+        setSubscribers(subscribersList);
 
         // Calculate stats
-        const users = usersResponse.data.data.users || [];
         const blogs = publishedBlogsResponse.data.data.blogs || [];
-        const activeUsers = users.filter(user => user.active).length;
         setStats({
-          totalUsers: users.length,
-          activeUsers,
+          totalAuthors: authorsList.length,
+          totalSubscribers: subscribersList.length,
           totalBlogs: blogs.length,
           pendingBlogs: filteredPending.length,
           totalViews: blogs.reduce((sum, blog) => sum + (blog.views || 0), 0),
@@ -121,50 +124,6 @@ const AdminDashboard = () => {
       setPendingBlogs(prevBlogs => prevBlogs.filter(blog => blog._id !== id));
     } catch (error) {
       console.error('Error rejecting blog:', error);
-    }
-  };
-
-  const handleBlockUser = async (id) => {
-    try {
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
-      await api.axios.put(`/users/${id}`, {
-        active: false
-      }, { headers });
-
-      // Update user status in the state
-      setRegisteredUsers(prevUsers =>
-        prevUsers.map(user =>
-          user._id === id ? { ...user, active: false } : user
-        )
-      );
-    } catch (error) {
-      console.error('Error blocking user:', error);
-    }
-  };
-
-  const handleActivateUser = async (id) => {
-    try {
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
-      await api.axios.put(`/users/${id}`, {
-        active: true
-      }, { headers });
-
-      // Update user status in the state
-      setRegisteredUsers(prevUsers =>
-        prevUsers.map(user =>
-          user._id === id ? { ...user, active: true } : user
-        )
-      );
-    } catch (error) {
-      console.error('Error activating user:', error);
     }
   };
 
@@ -246,13 +205,22 @@ const AdminDashboard = () => {
                 Published Blogs
               </button>
               <button
-                onClick={() => setActiveTab('users')}
-                className={`${activeTab === 'users'
+                onClick={() => setActiveTab('authors')}
+                className={`${activeTab === 'authors'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
               >
-                User Management
+                Authors
+              </button>
+              <button
+                onClick={() => setActiveTab('subscribers')}
+                className={`${activeTab === 'subscribers'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
+              >
+                Subscribers
               </button>
               <Link
                 to="/admin/book-reviews"
@@ -314,10 +282,10 @@ const AdminDashboard = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-gray-50 p-6 rounded-lg">
-                  <h3 className="text-lg font-medium mb-2">Users</h3>
+                  <h3 className="text-lg font-medium mb-2">Community</h3>
                   <div className="flex items-end justify-between">
-                    <span className="text-3xl font-bold">{stats.totalUsers}</span>
-                    <span className="text-sm text-gray-500">{stats.activeUsers} active</span>
+                    <span className="text-3xl font-bold">{stats.totalAuthors}</span>
+                    <span className="text-sm text-gray-500">authors · {stats.totalSubscribers} subscribers</span>
                   </div>
                 </div>
 
@@ -522,67 +490,91 @@ const AdminDashboard = () => {
           )}
 
           {/* User Management Tab */}
-          {!loading && !error && activeTab === 'users' && (
+          {!loading && !error && activeTab === 'authors' && (
             <div>
-              <h2 className="text-xl font-bold font-serif mb-6">User Management</h2>
-
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Join Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Blogs</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {registeredUsers.map((user) => (
-                      <tr key={user.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium text-gray-900">{user.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.joinDate}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.blogsCount}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.active
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                            }`}>
-                            {user.active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {user.active ? (
-                            <button
-                              onClick={() => handleBlockUser(user.id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              Block
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleActivateUser(user.id)}
-                              className="text-green-600 hover:text-green-900"
-                            >
-                              Activate
-                            </button>
-                          )}
-                        </td>
+              <h2 className="text-xl font-bold font-serif mb-6">
+                Authors <span className="text-sm font-normal text-gray-500">({authors.length} contributors)</span>
+              </h2>
+              {authors.length === 0 ? (
+                <p className="text-gray-500">No authors yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Published</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {authors.map((author) => (
+                        <tr key={author._id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-3">
+                              <img src={author.avatar || '/logo.png'} alt={author.name} className="w-8 h-8 rounded-full object-cover bg-amber-50" />
+                              <Link to={`/authors/${author._id}`} className="font-medium text-gray-900 hover:text-amber-800">{author.name}</Link>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{author.email}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{author.publishedBlogs}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{author.totalBlogs}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{author.createdAt ? new Date(author.createdAt).toLocaleDateString() : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!loading && !error && activeTab === 'subscribers' && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold font-serif">
+                  Subscribers <span className="text-sm font-normal text-gray-500">({subscribers.length})</span>
+                </h2>
+                {subscribers.length > 0 && (
+                  <button
+                    onClick={() => {
+                      const csv = 'email,subscribed_at\n' + subscribers.map(s => `${s.email},${s.createdAt || ''}`).join('\n');
+                      const blob = new Blob([csv], { type: 'text/csv' });
+                      const a = document.createElement('a');
+                      a.href = URL.createObjectURL(blob);
+                      a.download = 'ajeyam-subscribers.csv';
+                      a.click();
+                    }}
+                    className="text-sm px-4 py-2 border border-amber-900 text-amber-900 rounded-md hover:bg-amber-50"
+                  >
+                    Export CSV
+                  </button>
+                )}
               </div>
+              {subscribers.length === 0 ? (
+                <p className="text-gray-500">No subscribers yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscribed</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {subscribers.map((sub) => (
+                        <tr key={sub._id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sub.email}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{sub.createdAt ? new Date(sub.createdAt).toLocaleDateString() : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>

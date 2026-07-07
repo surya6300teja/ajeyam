@@ -22,6 +22,7 @@ router.get('/:id/blogs', userController.getUserBlogs);
 router.use(authController.restrictTo('admin'));
 
 router.get('/', userController.getAllUsers);
+router.get('/authors', userController.getAuthors);
 
 // Parameterized routes LAST
 router.get('/:id', userController.getUser);

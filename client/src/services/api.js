@@ -167,6 +167,7 @@ const userAPI = {
   updatePassword: (passwordData) => api.patch('/users/update-password', passwordData),
   deleteAccount: () => api.delete('/users/delete-me'),
   getAllUsers: () => api.get('/users'), // Admin only
+  getAuthors: () => api.get('/users/authors'), // Admin only — users with >=1 blog
   updateUser: (id, userData) => api.patch(`/users/${id}`, userData), // Admin only
   deleteUser: (id) => api.delete(`/users/${id}`), // Admin only
   // Save/unsave a blog
@@ -187,6 +188,7 @@ const systemAPI = {
 // Newsletter subscription
 const subscriberAPI = {
   subscribe: (email) => api.post('/subscribe', { email }),
+  list: () => api.get('/subscribe'), // Admin only
 };
 
 // Export the API

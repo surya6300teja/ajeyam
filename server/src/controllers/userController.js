@@ -27,6 +27,45 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+// Get authors — users who have written at least one blog, with counts
+exports.getAuthors = async (req, res) => {
+  try {
+    const grouped = await Blog.aggregate([
+      {
+        $group: {
+          _id: '$author',
+          totalBlogs: { $sum: 1 },
+          publishedBlogs: { $sum: { $cond: [{ $eq: ['$status', 'published'] }, 1, 0] } },
+        },
+      },
+      { $sort: { totalBlogs: -1 } },
+    ]);
+
+    const ids = grouped.map((g) => g._id).filter(Boolean);
+    const users = await User.find({ _id: { $in: ids } })
+      .select('name email avatar role createdAt')
+      .lean();
+    const byId = {};
+    users.forEach((u) => { byId[String(u._id)] = u; });
+
+    const authors = grouped
+      .filter((g) => byId[String(g._id)])
+      .map((g) => ({
+        ...byId[String(g._id)],
+        totalBlogs: g.totalBlogs,
+        publishedBlogs: g.publishedBlogs,
+      }));
+
+    res.status(200).json({
+      status: 'success',
+      results: authors.length,
+      data: { authors },
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
 // Get user by ID
 exports.getUser = async (req, res) => {
   try {

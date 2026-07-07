@@ -1,6 +1,20 @@
 const Subscriber = require('../models/Subscriber');
 const { sendSubscriptionWelcomeEmail } = require('../utils/emailService');
 
+// GET /api/v1/subscribe — admin: list all subscribers
+exports.listSubscribers = async (req, res) => {
+  try {
+    const subscribers = await Subscriber.find().sort('-createdAt').lean();
+    res.status(200).json({
+      status: 'success',
+      results: subscribers.length,
+      data: { subscribers },
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
 // POST /api/v1/subscribe  — public
 exports.subscribe = async (req, res) => {
   try {
