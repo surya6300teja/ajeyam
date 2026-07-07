@@ -327,8 +327,8 @@ const Home = () => {
                   <div className="absolute inset-0 flex flex-col justify-end p-4 sm:p-6 text-white">
                     <div className="transform group-hover:translate-y-0 translate-y-2 sm:translate-y-4 transition-transform duration-500">
                       <h3 className="text-lg sm:text-2xl font-serif mb-1 sm:mb-2">{category.name}</h3>
-                      <p className="text-xs sm:text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                        {category.blogsCount || 0} Stories
+                      <p className="text-xs sm:text-sm text-amber-100">
+                        {category.blogsCount || 0} {(category.blogsCount || 0) === 1 ? 'Story' : 'Stories'}
                       </p>
                     </div>
                   </div>

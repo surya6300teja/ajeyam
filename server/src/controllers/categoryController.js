@@ -37,7 +37,16 @@ exports.getAllCategories = async (req, res) => {
     }
     
     // Execute query
-    const categories = await Category.find(query).sort('order');
+    const categories = await Category.find(query).sort('order').lean();
+
+    // Attach published post counts per category (for the home page display)
+    const counts = await Blog.aggregate([
+      { $match: { status: 'published' } },
+      { $group: { _id: '$category', count: { $sum: 1 } } }
+    ]);
+    const countMap = {};
+    counts.forEach((c) => { countMap[String(c._id)] = c.count; });
+    categories.forEach((c) => { c.blogsCount = countMap[String(c._id)] || 0; });
 
     // Categories change rarely and load on every page — cache briefly.
     res.set('Cache-Control', 'private, max-age=120');

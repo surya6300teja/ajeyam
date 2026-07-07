@@ -857,11 +857,29 @@ const BlogEditor = ({ initialContent = '', initialData = null, onSave, categorie
       {/* Featured Image Upload */}
       <div className="relative h-[300px] bg-gray-100 mb-8">
         {featuredImage ? (
-          <img
-            src={featuredImage}
-            alt="Featured"
-            className="w-full h-full object-cover"
-          />
+          <>
+            <img
+              src={featuredImage}
+              alt="Featured"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-3 right-3 flex gap-2">
+              <button
+                type="button"
+                onClick={handleFeaturedImageUpload}
+                className="px-3 py-1.5 bg-white/90 rounded-md shadow-sm border border-gray-200 text-sm font-medium hover:bg-white"
+              >
+                Change
+              </button>
+              <button
+                type="button"
+                onClick={() => setFeaturedImage('')}
+                className="px-3 py-1.5 bg-white/90 rounded-md shadow-sm border border-gray-200 text-sm font-medium text-red-600 hover:bg-white"
+              >
+                Remove
+              </button>
+            </div>
+          </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <button
