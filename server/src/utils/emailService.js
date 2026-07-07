@@ -158,3 +158,69 @@ exports.sendSubscriptionWelcomeEmail = async (toEmail) => {
         html,
     });
 };
+
+/**
+ * Notify a batch of recipients (via BCC) that a new blog was published.
+ */
+exports.sendNewBlogNotification = async (recipients, blog) => {
+    if (!recipients || !recipients.length) return;
+    const transporter = createTransporter();
+
+    const url = `https://ajeyam.in/blogs/${blog.slug || blog._id}`;
+    const summary = ((blog.summary || '').trim()).slice(0, 240);
+
+    const html = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body style="margin:0;padding:0;background:#f9f5f0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f5f0;padding:40px 0;">
+      <tr>
+        <td align="center">
+          <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+            <tr>
+              <td style="background:linear-gradient(135deg,#78350f,#c2410c);padding:28px;text-align:center;">
+                <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:0.5px;">ajeyam.in</h1>
+                <p style="margin:6px 0 0;color:#fed7aa;font-size:12px;letter-spacing:1px;">A NEW STORY AWAITS</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px;">
+                <p style="margin:0 0 8px;color:#92400e;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">New Article</p>
+                <h2 style="margin:0 0 14px;color:#78350f;font-size:23px;line-height:1.3;">${blog.title || 'A new article on Ajeyam'}</h2>
+                ${summary ? `<p style="margin:0 0 24px;color:#555;font-size:15px;line-height:1.7;">${summary}${summary.length >= 240 ? '…' : ''}</p>` : ''}
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr><td align="center">
+                    <a href="${url}" target="_blank"
+                      style="display:inline-block;background:#78350f;color:#ffffff;padding:14px 40px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:600;">
+                      Read Now
+                    </a>
+                  </td></tr>
+                </table>
+                <p style="margin:26px 0 0;color:#92400e;font-size:14px;font-weight:600;">शुभमस्तु,</p>
+                <p style="margin:2px 0 0;color:#92400e;font-size:14px;font-weight:600;">Ajeyam</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#fef3c7;padding:18px 32px;text-align:center;">
+                <p style="margin:0;color:#92400e;font-size:12px;">You're receiving this because you subscribed to or joined Ajeyam. &copy; ${new Date().getFullYear()} ajeyam.in</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>`;
+
+    await transporter.sendMail({
+        from: `"Ajeyam" <${EMAIL_FROM}>`,
+        to: EMAIL_FROM,          // real recipients are hidden in BCC
+        bcc: recipients,
+        subject: `New on Ajeyam: ${blog.title || 'A new article'}`,
+        html,
+    });
+};

@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const { promisify } = require('util');
 const crypto = require('crypto');
 const User = require('../models/User');
+const { sendSubscriptionWelcomeEmail } = require('../utils/emailService');
 
 // Helper function to sign JWT token
 const signToken = (id) => {
@@ -98,7 +99,9 @@ exports.register = async (req, res, next) => {
 
     console.log('User created successfully with ID:', newUser._id);
 
-    // In a production app, send verification email here
+    // Send the welcome email (best-effort — never block signup on it)
+    sendSubscriptionWelcomeEmail(newUser.email).catch((err) =>
+      console.error('Welcome email failed:', err.message));
 
     // Create token and send response
     createSendToken(newUser, 201, res);
@@ -410,6 +413,9 @@ exports.googleLogin = async (req, res, next) => {
           avatar: picture,
           isEmailVerified: true, // Google emails are already verified
         });
+        // Welcome the new Google signup (best-effort)
+        sendSubscriptionWelcomeEmail(user.email).catch((err) =>
+          console.error('Welcome email failed:', err.message));
       }
     }
 

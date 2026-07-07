@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Blog = require('../models/Blog');
 const Comment = require('../models/Comment');
 const { getFileUrl } = require('../utils/fileUpload');
+const { notifyNewBlogPublished } = require('../utils/blogNotifier');
 
 // Upload a blog image (cover or inline) as a file and return its URL.
 // Lets the editor store a short URL instead of a base64 blob in the DB.
@@ -445,6 +446,7 @@ exports.changeBlogStatus = async (req, res) => {
       });
     }
 
+    const prevStatus = blog.status;
     blog.status = status;
 
     // Set rejectionReason if status is 'rejected'
@@ -460,6 +462,11 @@ exports.changeBlogStatus = async (req, res) => {
     }
 
     await blog.save();
+
+    // Notify subscribers + users the first time a blog becomes published
+    if (status === 'published' && prevStatus !== 'published') {
+      notifyNewBlogPublished(blog);
+    }
 
     res.status(200).json({
       status: 'success',
@@ -645,6 +652,9 @@ exports.approveBlog = async (req, res) => {
     blog.status = 'published';
     blog.publishedAt = Date.now();
     await blog.save();
+
+    // Notify subscribers + registered users of the newly published blog
+    notifyNewBlogPublished(blog);
 
     res.status(200).json({
       status: 'success',
