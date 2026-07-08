@@ -1,18 +1,16 @@
 const Subscriber = require('../models/Subscriber');
-const User = require('../models/User');
 const { sendNewBlogNotification } = require('./emailService');
 
-// Notify all subscribers + registered users that a blog was published.
+// Notify all subscribers that a blog was published. Registered users are
+// auto-added to the subscriber list on signup, so this single list covers
+// everyone and also respects anyone who has unsubscribed.
 // Fire-and-forget: callers should not await this in the request path.
 exports.notifyNewBlogPublished = async (blog) => {
   try {
-    const [subs, users] = await Promise.all([
-      Subscriber.find({ isActive: true }).select('email').lean(),
-      User.find({}).select('email').lean(),
-    ]);
+    const subs = await Subscriber.find({ isActive: true }).select('email').lean();
 
     const emails = [...new Set(
-      [...subs, ...users]
+      subs
         .map((x) => (x.email || '').toLowerCase().trim())
         .filter((e) => /^\S+@\S+\.\S+$/.test(e))
     )];

@@ -599,7 +599,7 @@ const AdminDashboard = () => {
                 {subscribers.length > 0 && (
                   <button
                     onClick={() => {
-                      const csv = 'email,subscribed_at\n' + subscribers.map(s => `${s.email},${s.createdAt || ''}`).join('\n');
+                      const csv = 'email,source,subscribed_at\n' + subscribers.map(s => `${s.email},${s.source || 'footer'},${s.createdAt || ''}`).join('\n');
                       const blob = new Blob([csv], { type: 'text/csv' });
                       const a = document.createElement('a');
                       a.href = URL.createObjectURL(blob);
@@ -624,6 +624,7 @@ const AdminDashboard = () => {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscribed</th>
                       </tr>
                     </thead>
@@ -631,6 +632,11 @@ const AdminDashboard = () => {
                       {subscribers.map((sub) => (
                         <tr key={sub._id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sub.email}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${sub.source === 'signup' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}`}>
+                              {sub.source === 'signup' ? 'Registered user' : 'Footer form'}
+                            </span>
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{sub.createdAt ? new Date(sub.createdAt).toLocaleDateString() : '—'}</td>
                         </tr>
                       ))}

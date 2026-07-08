@@ -1,5 +1,6 @@
 const Subscriber = require('../models/Subscriber');
 const { sendSubscriptionWelcomeEmail } = require('../utils/emailService');
+const { addSubscriber } = require('../utils/subscribe');
 
 // GET /api/v1/subscribe — admin: list all subscribers
 exports.listSubscribers = async (req, res) => {
@@ -24,16 +25,14 @@ exports.subscribe = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Please provide a valid email address.' });
     }
 
-    const existing = await Subscriber.findOne({ email });
-    if (existing) {
+    const { created } = await addSubscriber(email, 'footer');
+    if (!created) {
       return res.status(200).json({
         status: 'success',
         message: 'You are already subscribed. Thank you!',
         alreadySubscribed: true,
       });
     }
-
-    await Subscriber.create({ email });
 
     // Send the welcome email, but don't fail the request if email isn't configured/sending.
     try {

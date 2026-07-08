@@ -14,6 +14,12 @@ const SubscriberSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // How this subscriber joined: footer newsletter form or account signup
+    source: {
+      type: String,
+      enum: ['footer', 'signup'],
+      default: 'footer',
+    },
   },
   { timestamps: true }
 );
