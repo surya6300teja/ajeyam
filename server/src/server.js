@@ -14,6 +14,7 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const utilRoutes = require('./routes/utilRoutes');
 const bookReviewRoutes = require('./routes/bookReviewRoutes');
 const subscriberRoutes = require('./routes/subscriberRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 
 // Import error middleware
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
@@ -109,6 +110,7 @@ app.use('/api/v1/categories', categoryRoutes);
 app.use('/api/v1/utils', utilRoutes);
 app.use('/api/v1/reviews', bookReviewRoutes);
 app.use('/api/v1/subscribe', subscriberRoutes);
+app.use('/api/v1/contact', contactRoutes);
 
 // Health check route
 app.get('/api/v1/health', (req, res) => {

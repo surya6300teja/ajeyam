@@ -191,6 +191,14 @@ const subscriberAPI = {
   list: () => api.get('/subscribe'), // Admin only
 };
 
+// Contact form
+const contactAPI = {
+  submit: (data) => api.post('/contact', data),
+  list: () => api.get('/contact'), // Admin only
+  markRead: (id) => api.patch(`/contact/${id}/read`), // Admin only
+  remove: (id) => api.delete(`/contact/${id}`), // Admin only
+};
+
 // Export the API
 export default {
   auth: authAPI,
@@ -201,6 +209,7 @@ export default {
   system: systemAPI,
   bookReviews: bookReviewAPI,
   subscribers: subscriberAPI,
+  contact: contactAPI,
   // Direct access to the axios instance
   axios: api,
 };

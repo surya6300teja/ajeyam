@@ -1,4 +1,26 @@
+import { useState } from 'react';
+import api from '../services/api';
+
 const Contact = () => {
+    const [form, setForm] = useState({ name: '', email: '', message: '' });
+    const [sending, setSending] = useState(false);
+    const [result, setResult] = useState(null);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setSending(true);
+        setResult(null);
+        try {
+            const res = await api.contact.submit(form);
+            setResult({ type: 'success', text: res?.data?.message || 'Thank you for your message! We will get back to you soon.' });
+            setForm({ name: '', email: '', message: '' });
+        } catch (err) {
+            setResult({ type: 'error', text: err?.response?.data?.message || 'Something went wrong. Please try again.' });
+        } finally {
+            setSending(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#FBF7F4]">
             <title>Contact Us | Ajeyam.in</title>
@@ -70,13 +92,15 @@ const Contact = () => {
                     {/* Contact Form */}
                     <div className="bg-white rounded-2xl p-8 shadow-sm border border-amber-100">
                         <h2 className="text-xl font-serif font-bold text-amber-900 mb-6">Send a Message</h2>
-                        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert('Thank you for your message! We will get back to you soon.'); }}>
+                        <form className="space-y-4" onSubmit={handleSubmit}>
                             <div>
                                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                                 <input
                                     type="text"
                                     id="name"
                                     required
+                                    value={form.name}
+                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                     placeholder="Your name"
                                 />
@@ -87,6 +111,8 @@ const Contact = () => {
                                     type="email"
                                     id="email"
                                     required
+                                    value={form.email}
+                                    onChange={(e) => setForm({ ...form, email: e.target.value })}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                     placeholder="your@email.com"
                                 />
@@ -97,16 +123,24 @@ const Contact = () => {
                                     id="message"
                                     required
                                     rows={5}
+                                    value={form.message}
+                                    onChange={(e) => setForm({ ...form, message: e.target.value })}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                     placeholder="How can we help?"
                                 />
                             </div>
                             <button
                                 type="submit"
-                                className="w-full py-3 bg-amber-900 text-white font-medium rounded-lg hover:bg-amber-800 transition-colors"
+                                disabled={sending}
+                                className="w-full py-3 bg-amber-900 text-white font-medium rounded-lg hover:bg-amber-800 transition-colors disabled:opacity-60"
                             >
-                                Send Message
+                                {sending ? 'Sending…' : 'Send Message'}
                             </button>
+                            {result && (
+                                <p className={`text-sm ${result.type === 'success' ? 'text-green-700' : 'text-red-600'}`}>
+                                    {result.text}
+                                </p>
+                            )}
                         </form>
                     </div>
                 </div>

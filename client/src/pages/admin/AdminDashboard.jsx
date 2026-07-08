@@ -21,6 +21,9 @@ const AdminDashboard = () => {
   const [subscribersLoaded, setSubscribersLoaded] = useState(false);
   const [authorsLoading, setAuthorsLoading] = useState(false);
   const [subscribersLoading, setSubscribersLoading] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [messagesLoaded, setMessagesLoaded] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
     totalAuthors: 0,
@@ -117,6 +120,16 @@ const AdminDashboard = () => {
         })
         .catch(() => setError('Failed to load subscribers.'))
         .finally(() => setSubscribersLoading(false));
+    }
+    if (activeTab === 'messages' && !messagesLoaded && !messagesLoading) {
+      setMessagesLoading(true);
+      api.contact.list()
+        .then(res => {
+          setMessages(res.data.data.messages || []);
+          setMessagesLoaded(true);
+        })
+        .catch(() => setError('Failed to load messages.'))
+        .finally(() => setMessagesLoading(false));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, isAuthenticated, isAdmin]);
@@ -254,6 +267,15 @@ const AdminDashboard = () => {
                   } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
               >
                 Subscribers
+              </button>
+              <button
+                onClick={() => setActiveTab('messages')}
+                className={`${activeTab === 'messages'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
+              >
+                Messages
               </button>
               <Link
                 to="/admin/book-reviews"
@@ -614,6 +636,77 @@ const AdminDashboard = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!error && activeTab === 'messages' && (
+            <div>
+              <h2 className="text-xl font-bold font-serif mb-6">
+                Contact Messages{' '}
+                <span className="text-sm font-normal text-gray-500">
+                  ({messages.length}{messages.some(m => !m.isRead) ? ` · ${messages.filter(m => !m.isRead).length} unread` : ''})
+                </span>
+              </h2>
+              {messagesLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="w-8 h-8 border-4 border-amber-900/20 border-l-amber-900 rounded-full animate-spin"></div>
+                </div>
+              ) : messages.length === 0 ? (
+                <p className="text-gray-500">No messages yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((msg) => (
+                    <div key={msg._id} className={`p-4 rounded-lg border ${msg.isRead ? 'bg-white border-gray-200' : 'bg-amber-50 border-amber-200'}`}>
+                      <div className="flex items-start justify-between gap-4 mb-2">
+                        <div>
+                          <span className="font-medium text-gray-900">{msg.name}</span>
+                          <a href={`mailto:${msg.email}`} className="ml-2 text-sm text-amber-800 hover:underline">{msg.email}</a>
+                          {!msg.isRead && (
+                            <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-200 text-amber-900">New</span>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500 whitespace-nowrap">
+                          {msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ''}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 text-sm whitespace-pre-wrap mb-3">{msg.message}</p>
+                      <div className="flex gap-3">
+                        <a
+                          href={`mailto:${msg.email}?subject=${encodeURIComponent('Re: Your message to Ajeyam')}`}
+                          className="text-sm text-amber-800 hover:underline"
+                        >
+                          Reply
+                        </a>
+                        {!msg.isRead && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await api.contact.markRead(msg._id);
+                                setMessages(prev => prev.map(m => m._id === msg._id ? { ...m, isRead: true } : m));
+                              } catch { /* noop */ }
+                            }}
+                            className="text-sm text-gray-600 hover:text-gray-900"
+                          >
+                            Mark read
+                          </button>
+                        )}
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm('Delete this message?')) return;
+                            try {
+                              await api.contact.remove(msg._id);
+                              setMessages(prev => prev.filter(m => m._id !== msg._id));
+                            } catch { /* noop */ }
+                          }}
+                          className="text-sm text-red-600 hover:text-red-800"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
