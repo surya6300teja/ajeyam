@@ -1,4 +1,6 @@
 const ContactMessage = require('../models/ContactMessage');
+const { addSubscriber } = require('../utils/subscribe');
+const { sendSubscriptionWelcomeEmail } = require('../utils/emailService');
 
 // POST /api/v1/contact — public: submit a contact form message
 exports.submitMessage = async (req, res) => {
@@ -13,6 +15,16 @@ exports.submitMessage = async (req, res) => {
     }
 
     await ContactMessage.create({ name: name.trim(), email, message: message.trim() });
+
+    // Contact-form senders also become subscribers + get the welcome mail
+    // (best-effort — never block the contact submission on it).
+    addSubscriber(email, 'contact')
+      .then(({ created }) => {
+        if (created) {
+          return sendSubscriptionWelcomeEmail(email.trim().toLowerCase());
+        }
+      })
+      .catch((err) => console.error('Contact auto-subscribe/welcome failed:', err.message));
 
     res.status(201).json({
       status: 'success',

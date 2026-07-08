@@ -633,8 +633,8 @@ const AdminDashboard = () => {
                         <tr key={sub._id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sub.email}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${sub.source === 'signup' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}`}>
-                              {sub.source === 'signup' ? 'Registered user' : 'Footer form'}
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${sub.source === 'signup' ? 'bg-amber-100 text-amber-800' : sub.source === 'contact' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                              {sub.source === 'signup' ? 'Registered user' : sub.source === 'contact' ? 'Contact form' : 'Footer form'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{sub.createdAt ? new Date(sub.createdAt).toLocaleDateString() : '—'}</td>

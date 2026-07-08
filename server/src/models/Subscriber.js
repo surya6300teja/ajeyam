@@ -14,10 +14,11 @@ const SubscriberSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    // How this subscriber joined: footer newsletter form or account signup
+    // How this subscriber joined: footer newsletter form, account signup,
+    // or the contact form.
     source: {
       type: String,
-      enum: ['footer', 'signup'],
+      enum: ['footer', 'signup', 'contact'],
       default: 'footer',
     },
   },
