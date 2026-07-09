@@ -157,6 +157,16 @@ exports.login = async (req, res, next) => {
     // Find user by email and include password in results
     const user = await User.findOne({ email }).select('+password');
 
+    // Google-only account: no password stored. Guard before bcrypt (which
+    // throws on an undefined hash) and point the user at the right flow.
+    if (user && !user.password) {
+      return res.status(401).json({
+        status: 'error',
+        message:
+          'This account was created with Google Sign-In. Continue with Google, or use "Forgot password" to set a password.',
+      });
+    }
+
     // Check if user exists and password is correct
     if (!user || !(await user.correctPassword(password, user.password))) {
       return res.status(401).json({

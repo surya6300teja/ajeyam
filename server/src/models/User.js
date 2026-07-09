@@ -63,6 +63,13 @@ const UserSchema = new mongoose.Schema(
         message: 'Passwords do not match'
       }
     },
+    // True once the account has a password set. Google-only accounts start
+    // false, which lets them SET a first password without a current one.
+    // (`password` is select:false, so the client can't infer this otherwise.)
+    hasPassword: {
+      type: Boolean,
+      default: false
+    },
     passwordChangedAt: Date,
     passwordResetToken: String,
     passwordResetExpires: Date,
@@ -112,10 +119,14 @@ UserSchema.pre('save', async function(next) {
   
   // Hash the password with cost of 12
   this.password = await bcrypt.hash(this.password, 12);
-  
+
+  // Record that this account now has a password (used by the UI to decide
+  // between "Set Password" and "Change Password")
+  this.hasPassword = true;
+
   // Delete passwordConfirm field
   this.passwordConfirm = undefined;
-  
+
   // Update passwordChangedAt field if password is changed
   if (this.isNew) return next();
   this.passwordChangedAt = Date.now() - 1000; // Subtract 1 second to allow for processing time

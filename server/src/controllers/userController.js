@@ -166,23 +166,38 @@ exports.updatePassword = async (req, res) => {
   try {
     const { currentPassword, password, passwordConfirm } = req.body;
 
-    // Check if all fields exist
-    if (!currentPassword || !password || !passwordConfirm) {
+    if (!password || !passwordConfirm) {
       return res.status(400).json({
         status: 'error',
-        message: 'Please provide current password, new password and password confirmation'
+        message: 'Please provide a new password and password confirmation'
       });
     }
 
     // Get user with password
     const user = await User.findById(req.user.id).select('+password');
 
-    // Check if current password is correct
-    if (!(await user.correctPassword(currentPassword, user.password))) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Your current password is incorrect'
-      });
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+
+    // Google-only accounts have no password yet — let them set a first one
+    // without supplying a current password (they never had one).
+    const isSettingFirstPassword = !user.password;
+
+    if (!isSettingFirstPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Please provide your current password'
+        });
+      }
+
+      if (!(await user.correctPassword(currentPassword, user.password))) {
+        return res.status(401).json({
+          status: 'error',
+          message: 'Your current password is incorrect'
+        });
+      }
     }
 
     // Update password

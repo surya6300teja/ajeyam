@@ -176,17 +176,26 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setLoading(true);
       
-      const response = await api.users.updatePassword({
-        currentPassword,
-        password,
-        passwordConfirm
-      });
-      
+      // currentPassword is omitted when the account is setting its first
+      // password (e.g. signed up with Google and never had one).
+      const payload = { password, passwordConfirm };
+      if (currentPassword) payload.currentPassword = currentPassword;
+
+      const response = await api.users.updatePassword(payload);
+
       // Update token if a new one is returned
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
       }
-      
+
+      // Reflect that the account now has a password (flips "Set" -> "Change")
+      const updatedUser = response.data?.data?.user;
+      if (updatedUser) {
+        setCurrentUser(updatedUser);
+      } else {
+        setCurrentUser((prev) => (prev ? { ...prev, hasPassword: true } : prev));
+      }
+
       return true;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to change password.');
