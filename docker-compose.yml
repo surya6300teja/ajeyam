@@ -10,6 +10,11 @@ services:
     #   - "3001:3001"
     env_file:
       - ./.env
+      # Real runtime secrets, kept OUTSIDE the repo so `git checkout` during a
+      # deploy can never overwrite them (server/.env is committed and would
+      # otherwise reset SMTP config back to the Mailtrap placeholders).
+      # Loaded last, so these values win over anything baked into the image.
+      - /home/ubuntu/ajeyam.secrets.env
     # Persist uploaded files (e.g. category images) across container rebuilds
     volumes:
       - ./server/uploads:/app/uploads
