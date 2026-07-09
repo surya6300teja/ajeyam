@@ -2,8 +2,7 @@ const jwt = require('jsonwebtoken');
 const { promisify } = require('util');
 const crypto = require('crypto');
 const User = require('../models/User');
-const { sendSubscriptionWelcomeEmail } = require('../utils/emailService');
-const { addSubscriber } = require('../utils/subscribe');
+const { addSubscriber, sendWelcomeEmailOnce } = require('../utils/subscribe');
 
 // Helper function to sign JWT token
 const signToken = (id) => {
@@ -100,12 +99,11 @@ exports.register = async (req, res, next) => {
 
     console.log('User created successfully with ID:', newUser._id);
 
-    // Every registered user is a subscriber by default (best-effort)
-    addSubscriber(newUser.email, 'signup').catch((err) =>
-      console.error('Auto-subscribe failed:', err.message));
-    // Send the welcome email (best-effort — never block signup on it)
-    sendSubscriptionWelcomeEmail(newUser.email).catch((err) =>
-      console.error('Welcome email failed:', err.message));
+    // Every registered user is a subscriber by default, then welcome them
+    // (best-effort — never block signup on email).
+    addSubscriber(newUser.email, 'signup')
+      .then(() => sendWelcomeEmailOnce(newUser.email))
+      .catch((err) => console.error('Auto-subscribe/welcome failed:', err.message));
 
     // Create token and send response
     createSendToken(newUser, 201, res);
@@ -418,10 +416,9 @@ exports.googleLogin = async (req, res, next) => {
           isEmailVerified: true, // Google emails are already verified
         });
         // New Google signup: subscribe by default + welcome (best-effort)
-        addSubscriber(user.email, 'signup').catch((err) =>
-          console.error('Auto-subscribe failed:', err.message));
-        sendSubscriptionWelcomeEmail(user.email).catch((err) =>
-          console.error('Welcome email failed:', err.message));
+        addSubscriber(user.email, 'signup')
+          .then(() => sendWelcomeEmailOnce(user.email))
+          .catch((err) => console.error('Auto-subscribe/welcome failed:', err.message));
       }
     }
 

@@ -21,6 +21,12 @@ const SubscriberSchema = new mongoose.Schema(
       enum: ['footer', 'signup', 'contact'],
       default: 'footer',
     },
+    // Set once the welcome email is successfully delivered, so it is never
+    // sent twice (SMTP was broken for a period, leaving many unsent).
+    welcomeEmailSentAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

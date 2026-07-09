@@ -1,4 +1,5 @@
 const Subscriber = require('../models/Subscriber');
+const { sendSubscriptionWelcomeEmail } = require('./emailService');
 
 // Idempotently add an email to the subscriber list.
 // Returns { created, subscriber } — created=true only when a new record is made.
@@ -14,4 +15,18 @@ exports.addSubscriber = async (email, source = 'footer') => {
     if (err.code === 11000) return { created: false };
     throw err;
   }
+};
+
+// Send the welcome email at most once per subscriber, recording delivery.
+// Returns true when an email was actually sent.
+exports.sendWelcomeEmailOnce = async (email) => {
+  const clean = (email || '').trim().toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(clean)) return false;
+
+  const subscriber = await Subscriber.findOne({ email: clean });
+  if (subscriber?.welcomeEmailSentAt) return false; // already welcomed
+
+  await sendSubscriptionWelcomeEmail(clean);
+  await Subscriber.updateOne({ email: clean }, { $set: { welcomeEmailSentAt: new Date() } });
+  return true;
 };

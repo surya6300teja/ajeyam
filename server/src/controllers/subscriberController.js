@@ -1,6 +1,5 @@
 const Subscriber = require('../models/Subscriber');
-const { sendSubscriptionWelcomeEmail } = require('../utils/emailService');
-const { addSubscriber } = require('../utils/subscribe');
+const { addSubscriber, sendWelcomeEmailOnce } = require('../utils/subscribe');
 
 // GET /api/v1/subscribe — admin: list all subscribers
 exports.listSubscribers = async (req, res) => {
@@ -36,7 +35,7 @@ exports.subscribe = async (req, res) => {
 
     // Send the welcome email, but don't fail the request if email isn't configured/sending.
     try {
-      await sendSubscriptionWelcomeEmail(email);
+      await sendWelcomeEmailOnce(email);
     } catch (mailErr) {
       console.error('Subscription welcome email failed:', mailErr.message);
     }
