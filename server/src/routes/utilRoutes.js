@@ -2,6 +2,50 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const Blog = require('../models/Blog');
+
+// XML sitemap for search engines. Served publicly at https://ajeyam.in/sitemap.xml
+// (nginx proxies that path here) and referenced from robots.txt.
+router.get('/sitemap.xml', async (req, res) => {
+  try {
+    const base = 'https://ajeyam.in';
+    const staticPaths = [
+      { loc: '/', priority: '1.0', changefreq: 'daily' },
+      { loc: '/blogs', priority: '0.9', changefreq: 'daily' },
+      { loc: '/categories', priority: '0.7', changefreq: 'weekly' },
+      { loc: '/book-reviews', priority: '0.7', changefreq: 'weekly' },
+      { loc: '/about', priority: '0.5', changefreq: 'monthly' },
+      { loc: '/contact', priority: '0.3', changefreq: 'yearly' },
+      { loc: '/privacy-policy', priority: '0.3', changefreq: 'yearly' },
+      { loc: '/terms-of-service', priority: '0.3', changefreq: 'yearly' },
+    ];
+
+    const blogs = await Blog.find({ status: 'published' })
+      .select('slug _id updatedAt publishedAt')
+      .sort({ publishedAt: -1 })
+      .lean();
+
+    const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const iso = (d) => new Date(d || Date.now()).toISOString().split('T')[0];
+
+    const urls = [
+      ...staticPaths.map(
+        (p) => `  <url>\n    <loc>${base}${p.loc}</loc>\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>`
+      ),
+      ...blogs.map(
+        (b) => `  <url>\n    <loc>${base}/blogs/${esc(b.slug || b._id)}</loc>\n    <lastmod>${iso(b.updatedAt || b.publishedAt)}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.8</priority>\n  </url>`
+      ),
+    ].join('\n');
+
+    res.set('Content-Type', 'application/xml');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.status(200).send(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
+    );
+  } catch (error) {
+    res.status(500).send('Failed to generate sitemap');
+  }
+});
 
 // Debug endpoint to test image sharing
 router.get('/og-debug', (req, res) => {

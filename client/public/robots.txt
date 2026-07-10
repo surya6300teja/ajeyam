@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Keep private/authenticated areas out of search results
+Disallow: /admin
+Disallow: /profile
+Disallow: /create-blog
+Disallow: /create-book-review
+Disallow: /my-book-reviews
+Disallow: /reset-password
+Disallow: /forgot-password
+
+Sitemap: https://ajeyam.in/sitemap.xml
