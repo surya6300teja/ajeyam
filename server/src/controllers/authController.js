@@ -28,9 +28,12 @@ const createSendToken = (user, statusCode, res) => {
 // Register new user
 exports.register = async (req, res, next) => {
   try {
-    console.log('=== REGISTRATION ATTEMPT ===');
-    console.log('Request body type:', typeof req.body);
-    console.log('Request body:', req.body);
+    // NEVER log the raw body — it contains the plaintext password.
+    console.log('=== REGISTRATION ATTEMPT ===', {
+      name: req.body?.name,
+      email: req.body?.email,
+      password: req.body?.password ? '[redacted]' : undefined,
+    });
 
     // Safely extract data from request body
     let name, email, password, passwordConfirm;

@@ -82,7 +82,13 @@ const BlogSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
-    publishedAt: Date
+    publishedAt: Date,
+    // Set once the "new article" email has gone out to subscribers, so that
+    // re-publishing / editing an article never re-blasts the mailing list.
+    notificationSentAt: {
+      type: Date,
+      default: null
+    }
   },
   {
     timestamps: true,
