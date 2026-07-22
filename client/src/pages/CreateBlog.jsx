@@ -102,8 +102,11 @@ const CreateBlog = () => {
 
       let response;
       if (editId) {
-        // UPDATE existing blog
-        response = await api.blogs.updateBlog(editId, blogPayload);
+        // UPDATE existing blog — never send author/status so editing (esp. by
+        // an admin) can't reassign the original writer. The server keeps the
+        // existing author and handles status.
+        const { author, status, ...updatePayload } = blogPayload;
+        response = await api.blogs.updateBlog(editId, updatePayload);
       } else {
         // CREATE new blog
         response = await api.blogs.createBlog(blogPayload);

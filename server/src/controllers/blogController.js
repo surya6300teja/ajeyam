@@ -222,6 +222,12 @@ exports.updateBlog = async (req, res) => {
       req.body.status = 'pending';
     }
 
+    // The author is fixed to the original writer and must never be changed on
+    // update — otherwise an admin editing someone's blog would become its
+    // author. Strip any author/_id the client may have sent.
+    delete req.body.author;
+    delete req.body._id;
+
     const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
